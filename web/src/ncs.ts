@@ -200,6 +200,13 @@ class BridgeDomain {
     const res = [];
 
     for (const int of this.interfaces) {
+      if (int.startsWith("BVI")) {
+        if (this.vlanTag !== parseInt(int.substring("BVI".length))) {
+          res.push(`BVI number がブリッジ名と異なる: ${int}`);
+        }
+        continue;
+      }
+
       const [_main, sub] = splitSubinterfaceID(int);
       if (this.vlanTag !== sub) {
         res.push(`sub-interface number がブリッジ名と異なる: ${int}`);
@@ -248,15 +255,39 @@ function getL2Transports(
   return grouped;
 }
 
-interface Config {
-  l2transport: Record<string, Array<L2TransportConfig>>;
-  domains: Array<BridgeDomain>;
+class Config {
+  constructor(
+    public readonly l2transport: Record<string, Array<L2TransportConfig>>,
+    public readonly domains: Array<BridgeDomain>
+  ) {}
+
+  lint(): string {
+    let msg = "";
+
+    for (const trans of Object.values(this.l2transport).flat()) {
+      const res = trans.lint();
+      if (res.length > 0) {
+        msg += `--- interface ${trans.baseif}.${trans.subIfNum} l2transport ---\n`;
+        msg += res.join("\n") + "\n";
+      }
+    }
+
+    for (const domain of Object.values(this.domains)) {
+      const res = domain.lint();
+      if (res.length > 0) {
+        msg += `--- bridge-domain VLAN${domain.vlanTag} ---\n`;
+        msg += res.join("\n") + "\n";
+      }
+    }
+
+    return msg;
+  }
 }
 
 function analyze(config: ReadonlyArray<Node>): Config {
   const l2transport = getL2Transports(config);
   const domains = getBridgeDomains(config);
-  return { l2transport, domains };
+  return new Config(l2transport, domains);
 }
 
 export function main(current: string): Config {

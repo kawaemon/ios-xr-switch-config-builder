@@ -6,7 +6,7 @@ import "./App.css";
 import defaultConfig from "../.kprivate/config.txt?raw";
 import { main } from "./ncs";
 
-const def = `
+const small = `
 interface HundredGigE0/0/0/0.100 l2transport
  encapsulation dot1q 300
  rewrite ingress tag pop 1 symmetric
@@ -25,9 +25,14 @@ function App() {
   }, [src]);
 
   return (
-    <pre>
-      <code style={{ whiteSpace: "pre" }}>{src}</code>
-    </pre>
+    <>
+      <pre>
+        <code style={{ whiteSpace: "pre" }}>{currentConfig.lint()}</code>
+      </pre>
+      <pre>
+        <code style={{ whiteSpace: "pre" }}>{src}</code>
+      </pre>
+    </>
   );
 }
 
