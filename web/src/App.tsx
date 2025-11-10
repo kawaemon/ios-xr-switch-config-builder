@@ -1,35 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useMemo, useState } from "react";
+import reactLogo from "./assets/react.svg";
+import viteLogo from "/vite.svg";
+import "./App.css";
+
+import defaultConfig from "../.kprivate/config.txt?raw";
+import { main } from "./ncs";
+
+const def = `
+interface HundredGigE0/0/0/0.100 l2transport
+ encapsulation dot1q 300
+ rewrite ingress tag pop 1 symmetric
+!
+l2vpn
+ bridge group VLAN
+  bridge-domain VLAN100
+   interface HundredGigE0/0/0/0.100
+   !
+`;
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [src, setSrc] = useState(defaultConfig);
+  const currentConfig = useMemo(() => {
+    return main(src);
+  }, [src]);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <pre>
+      <code style={{ whiteSpace: "pre" }}>{src}</code>
+    </pre>
+  );
 }
 
-export default App
+export default App;
