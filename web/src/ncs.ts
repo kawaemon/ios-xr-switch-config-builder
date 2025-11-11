@@ -6,15 +6,6 @@ function getIndent(line: string): number {
     line = line.substring(1);
   }
 }
-function last<T>(x: Array<T>): T | null {
-  return x[x.length - 1] ?? null;
-}
-function assert(b: boolean, msg: unknown): asserts b is true {
-  if (!b) {
-    console.error(`assertion failed:`, msg);
-    throw new Error();
-  }
-}
 
 function splitSubinterfaceID(name: string): [string, number | null] {
   const regexp = /(?<baseif>[^.]+).(?<subifnum>\d+)?/gm;
