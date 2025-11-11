@@ -47,14 +47,14 @@ function splitSubinterfaceID(name: string): [string, number | null] {
 */
 
 class NodeBlock {
-  public readonly type: "block" = "block";
+  public readonly type = "block" as const;
   constructor(
     public readonly name: string,
     public readonly stmts: ReadonlyArray<Node>
   ) {}
 }
 class NodeStmt {
-  public readonly type: "stmt" = "stmt";
+  public readonly type = "stmt" as const;
   constructor(public readonly stmt: string) {}
 }
 
@@ -293,7 +293,6 @@ function analyze(config: ReadonlyArray<Node>): Config {
 export function main(current: string): Config {
   const elements: Array<Node> = [];
   tokenize(new Lines(current.split("\n")), elements);
-  console.log(elements);
 
   const currentConfig = analyze(elements);
   console.log(currentConfig);
