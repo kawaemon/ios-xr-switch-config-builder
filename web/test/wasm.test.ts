@@ -1,22 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import init, { parse_config, analyze_config } from "../src/wasm/pkg/ncs_wasm";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const wasmPath = join(
-  __dirname,
-  "..",
-  "src",
-  "wasm",
-  "pkg",
-  "ncs_wasm_bg.wasm"
-);
-const wasmBuffer = readFileSync(wasmPath);
-
-await init(wasmBuffer);
+import { parse_config, analyze_config } from "../src/wasm/pkg/ncs_wasm";
 
 const iosxrConfig = `
 interface FortyGigE0/0/0/46
@@ -77,6 +60,7 @@ describe("WASM", () => {
           interfaces: [...d.interfaces],
         })),
         lintOutput: analyzed.lintOutput,
+        simplifiedConfig: analyzed.simplifiedConfig,
       },
     }).toEqual({
       parsed: [
@@ -135,6 +119,20 @@ describe("WASM", () => {
           },
         ],
         lintOutput: "",
+        simplifiedConfig: [
+          "vlan database",
+          "  vlan 300 name servers",
+          "",
+          "interface FortyGigE0/0/0/46",
+          "  description To:eth1.server1",
+          "  mru 9216",
+          "  switchport mode trunk",
+          "  switchport trunk allowed vlan add 300",
+          "",
+          "interface BVI300",
+          "  description servers",
+          "  ipv4 address 192.168.1.1 255.255.255.0",
+        ].join("\n"),
       },
     });
   });

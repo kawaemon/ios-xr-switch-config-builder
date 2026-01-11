@@ -1,6 +1,5 @@
 import {
   ActionIcon,
-  Badge,
   Button,
   Group,
   Stack,
@@ -12,16 +11,12 @@ import {
 import { IconMoon, IconSun } from "@tabler/icons-react";
 
 type LintStatusHeaderProps = {
-  lintBadgeColor: string;
-  lintBadgeLabel: string;
   showLintDetailButton: boolean;
   onOpenLintModal: () => void;
   onOpenConfigModal: () => void;
 };
 
 export function LintStatusHeader({
-  lintBadgeColor,
-  lintBadgeLabel,
   showLintDetailButton,
   onOpenLintModal,
   onOpenConfigModal,
@@ -42,9 +37,9 @@ export function LintStatusHeader({
   return (
     <Group justify="space-between" align="flex-start" wrap="wrap">
       <Stack gap={4} maw={600}>
-        <Title order={1}>NCS Config Lint</Title>
+        <Title order={1}>NCS Config Builder</Title>
         <Text c="dimmed">
-          Lint結果と bridge VLAN 情報を中心にコンフィグを確認できます。
+          NCS configを一般スイッチ向けの見やすい形式で確認できます。
         </Text>
       </Stack>
       <Group gap="sm" align="center">
@@ -56,9 +51,6 @@ export function LintStatusHeader({
         >
           {isDark ? <IconMoon size={20} /> : <IconSun size={20} />}
         </ActionIcon>
-        <Badge color={lintBadgeColor} variant="light">
-          {lintBadgeLabel}
-        </Badge>
         {showLintDetailButton ? (
           <Button
             variant="subtle"

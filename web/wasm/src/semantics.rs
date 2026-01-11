@@ -1,8 +1,10 @@
 use crate::parse::{Node, NodeBlock, NodeStmt};
 use crate::regex;
+use crate::simplified_config::build_simplified_config;
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
-fn split_subinterface_id(name: &str) -> Result<(String, Option<u32>), String> {
+pub(crate) fn split_subinterface_id(name: &str) -> Result<(String, Option<u32>), String> {
     let caps = regex!(r"^([^.]+)\.(\d+)?$")
         .captures(name)
         .ok_or_else(|| "invalid ifname".to_string())?;
@@ -55,7 +57,7 @@ impl L2TransportConfig {
         let mut ret = Vec::new();
 
         if Some(self.sub_if_num) != self.encap {
-            ret.push("sub-interface number と encapsulation tag が一致していません".to_string());
+            ret.push("sub-interface number と encapsulation tag が一致していない".to_string());
         }
 
         if !self.has_rewrite {
@@ -66,10 +68,13 @@ impl L2TransportConfig {
     }
 }
 
+#[wasm_bindgen(getter_with_clone)]
 #[derive(Debug, Clone)]
 pub struct BridgeDomain {
+    #[wasm_bindgen(js_name = vlanTag)]
     pub vlan_tag: u32,
     pub interfaces: Vec<String>,
+    description: Option<String>,
 }
 
 impl BridgeDomain {
@@ -91,11 +96,25 @@ impl BridgeDomain {
                 Some(caps.get(1)?.as_str().to_string())
             })
             .collect();
+        let description = Self::find_description(node_block);
 
         Some(BridgeDomain {
             vlan_tag,
             interfaces,
+            description,
         })
+    }
+
+    fn find_description(node_block: &NodeBlock) -> Option<String> {
+        node_block
+            .stmts()
+            .filter_map(|x| x.as_stmt())
+            .find_map(|stmt: &NodeStmt| stmt.stmt().strip_prefix("description "))
+            .map(|desc| desc.trim().to_string())
+    }
+
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
     }
 
     pub fn lint(&self) -> Vec<String> {
@@ -151,46 +170,88 @@ fn get_l2_transports(config: &[Node]) -> HashMap<String, Vec<L2TransportConfig>>
     grouped
 }
 
-#[derive(Debug)]
+fn get_interface_blocks(config: &[Node]) -> HashMap<String, Vec<String>> {
+    let mut blocks = HashMap::new();
+
+    for node_block in config.iter().filter_map(|node| node.as_block()) {
+        let Some(interface_name) = node_block.name.strip_prefix("interface ") else {
+            continue;
+        };
+
+        if interface_name.contains('.') || node_block.name.ends_with(" l2transport") {
+            continue;
+        }
+
+        let stmts = node_block
+            .stmts()
+            .filter_map(|node| node.as_stmt())
+            .map(|stmt: &NodeStmt| stmt.stmt().to_string())
+            .collect::<Vec<String>>();
+
+        if !stmts.is_empty() {
+            blocks.insert(interface_name.to_string(), stmts);
+        }
+    }
+
+    blocks
+}
+
+fn build_lint_output(
+    l2transport: &HashMap<String, Vec<L2TransportConfig>>,
+    domains: &[BridgeDomain],
+) -> String {
+    let mut msg = String::new();
+
+    for trans in l2transport.values().flat_map(|v| v.iter()) {
+        let res = trans.lint();
+        if !res.is_empty() {
+            msg.push_str(&format!(
+                "--- interface {}.{} l2transport ---\n",
+                trans.baseif, trans.sub_if_num
+            ));
+            msg.push_str(&res.join("\n"));
+            msg.push('\n');
+        }
+    }
+
+    for domain in domains {
+        let res = domain.lint();
+        if !res.is_empty() {
+            msg.push_str(&format!("--- bridge-domain VLAN{} ---\n", domain.vlan_tag));
+            msg.push_str(&res.join("\n"));
+            msg.push('\n');
+        }
+    }
+
+    msg
+}
+
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Debug, Clone)]
 pub struct Config {
-    pub l2transport: HashMap<String, Vec<L2TransportConfig>>,
     pub domains: Vec<BridgeDomain>,
+    #[wasm_bindgen(js_name = lintOutput)]
+    pub lint_output: String,
+    #[wasm_bindgen(js_name = simplifiedConfig)]
+    pub simplified_config: String,
 }
 
 impl Config {
     pub fn lint(&self) -> String {
-        let mut msg = String::new();
-
-        for trans in self.l2transport.values().flat_map(|v| v.iter()) {
-            let res = trans.lint();
-            if !res.is_empty() {
-                msg.push_str(&format!(
-                    "--- interface {}.{} l2transport ---\n",
-                    trans.baseif, trans.sub_if_num
-                ));
-                msg.push_str(&res.join("\n"));
-                msg.push('\n');
-            }
-        }
-
-        for domain in &self.domains {
-            let res = domain.lint();
-            if !res.is_empty() {
-                msg.push_str(&format!("--- bridge-domain VLAN{} ---\n", domain.vlan_tag));
-                msg.push_str(&res.join("\n"));
-                msg.push('\n');
-            }
-        }
-
-        msg
+        self.lint_output.clone()
     }
 }
 
 pub fn analyze(config: &[Node]) -> Config {
     let l2transport = get_l2_transports(config);
     let domains = get_bridge_domains(config).unwrap_or_default();
+    let lint_output = build_lint_output(&l2transport, &domains);
+    let interface_blocks = get_interface_blocks(config);
+    let simplified_config = build_simplified_config(&domains, &interface_blocks);
+
     Config {
-        l2transport,
         domains,
+        lint_output,
+        simplified_config,
     }
 }
