@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import defaultConfig from "../.kprivate/config.txt?raw";
 import { Container, Stack } from "@mantine/core";
-import { main } from "./ncs";
+import { main } from "./a0_business/a1_semantics";
 import { LintStatusHeader } from "./components/LintStatusHeader";
 import {
   BridgeSummaryCard,
@@ -54,12 +54,16 @@ function App() {
     setDraftConfig(src);
     setConfigModalOpen(true);
   };
-  const lintBadgeColor = isConfigEmpty ? "gray" : hasLintIssues ? "orange" : "green";
+  const lintBadgeColor = isConfigEmpty
+    ? "gray"
+    : hasLintIssues
+    ? "orange"
+    : "green";
   const lintBadgeLabel = isConfigEmpty
     ? "未入力"
     : hasLintIssues
-      ? "Lint要確認"
-      : "Lint OK";
+    ? "Lint要確認"
+    : "Lint OK";
   const showLintDetailButton = !isConfigEmpty && hasLintIssues;
   const bridgeSectionMessage = isConfigEmpty
     ? "Configを入力すると、Bridge VLAN の詳細が表示されます。"

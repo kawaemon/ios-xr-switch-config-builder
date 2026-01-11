@@ -1,11 +1,4 @@
-function getIndent(line: string): number {
-  for (let i = 0; ; i++) {
-    if (!line.startsWith(" ")) {
-      return i;
-    }
-    line = line.substring(1);
-  }
-}
+import { tokenize, type Node, type NodeBlock } from "./a0_parse";
 
 function splitSubinterfaceID(name: string): [string, number | null] {
   const regexp = /(?<baseif>[^.]+).(?<subifnum>\d+)?/gm;
@@ -19,81 +12,6 @@ function splitSubinterfaceID(name: string): [string, number | null] {
   const subif = mat.groups!["subifnum"];
 
   return [baseif, subif == null ? null : parseInt(subif)];
-}
-
-/*
-
-{
-  type: "stmt",
-  stmt: "logging trap warning"
-}
-{
-  type: "block",
-  name: "username kawak",
-  stmts: [
-    "address-family ipv4 "
-  ]
-}
-
-*/
-
-class NodeBlock {
-  public readonly type = "block" as const;
-  constructor(
-    public readonly name: string,
-    public readonly stmts: ReadonlyArray<Node>
-  ) {}
-}
-class NodeStmt {
-  public readonly type = "stmt" as const;
-  constructor(public readonly stmt: string) {}
-}
-
-type Node = NodeBlock | NodeStmt;
-
-class Lines {
-  private i: number = 0;
-  constructor(public readonly s: string[]) {}
-
-  next(): string | null {
-    return this.s[this.i++];
-  }
-  peek(): string | null {
-    return this.s[this.i];
-  }
-}
-
-function tokenize(lines: Lines, res: Array<Node>) {
-  let l = null;
-  while ((l = lines.next()) != null) {
-    const thisIndent = getIndent(l);
-    const line = l.trim();
-
-    const p = lines.peek() ?? "";
-    const nextIndent = getIndent(p);
-    const peek = p.trim();
-
-    // this is beginning of block
-    if (nextIndent > thisIndent) {
-      const buf: Array<Node> = [];
-      tokenize(lines, buf);
-      res.push(new NodeBlock(line, buf));
-      continue;
-    }
-
-    if (!line.startsWith("!") && line.trim().length > 0) {
-      res.push(new NodeStmt(line));
-    }
-
-    // next line is other block
-    if (nextIndent < thisIndent) {
-      // wtf
-      if (["end-set", "end-policy"].includes(peek)) {
-        res.push(new NodeStmt(lines.next()!));
-      }
-      return;
-    }
-  }
 }
 
 // interface Bundle-Ether100.300 l2transport
@@ -282,8 +200,8 @@ function analyze(config: ReadonlyArray<Node>): Config {
 }
 
 export function main(current: string): Config {
-  const elements: Array<Node> = [];
-  tokenize(new Lines(current.split("\n")), elements);
+  const elements = tokenize(current);
+  console.log(elements);
 
   const currentConfig = analyze(elements);
   console.log(currentConfig);
