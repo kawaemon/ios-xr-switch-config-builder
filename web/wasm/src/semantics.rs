@@ -1,7 +1,7 @@
 use crate::parse::{Node, NodeBlock, NodeStmt};
 use crate::regex;
-use crate::simplified_config::build_simplified_config;
-use std::collections::HashMap;
+use crate::simplified_config::{build_simplified_config, SimplifiedConfigData};
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 pub(crate) fn split_subinterface_id(name: &str) -> Result<(String, Option<u32>), String> {
@@ -170,8 +170,9 @@ fn get_l2_transports(config: &[Node]) -> HashMap<String, Vec<L2TransportConfig>>
     grouped
 }
 
-fn get_interface_blocks(config: &[Node]) -> HashMap<String, Vec<String>> {
-    let mut blocks = HashMap::new();
+fn collect_simplified_data(config: &[Node], domains: Vec<BridgeDomain>) -> SimplifiedConfigData {
+    let mut base_interfaces: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let mut bvi_interfaces: BTreeMap<String, Option<String>> = BTreeMap::new();
 
     for node_block in config.iter().filter_map(|node| node.as_block()) {
         let Some(interface_name) = node_block.name.strip_prefix("interface ") else {
@@ -182,6 +183,16 @@ fn get_interface_blocks(config: &[Node]) -> HashMap<String, Vec<String>> {
             continue;
         }
 
+        if interface_name.starts_with("BVI") {
+            let description = node_block
+                .stmts()
+                .filter_map(|node| node.as_stmt())
+                .find_map(|stmt: &NodeStmt| stmt.stmt().strip_prefix("description "))
+                .map(|desc| desc.trim().to_string());
+            bvi_interfaces.entry(interface_name.to_string()).or_insert(description);
+            continue;
+        }
+
         let stmts = node_block
             .stmts()
             .filter_map(|node| node.as_stmt())
@@ -189,11 +200,11 @@ fn get_interface_blocks(config: &[Node]) -> HashMap<String, Vec<String>> {
             .collect::<Vec<String>>();
 
         if !stmts.is_empty() {
-            blocks.insert(interface_name.to_string(), stmts);
+            base_interfaces.insert(interface_name.to_string(), stmts);
         }
     }
 
-    blocks
+    SimplifiedConfigData::new(domains, base_interfaces, bvi_interfaces)
 }
 
 fn build_lint_output(
@@ -246,8 +257,8 @@ pub fn analyze(config: &[Node]) -> Config {
     let l2transport = get_l2_transports(config);
     let domains = get_bridge_domains(config).unwrap_or_default();
     let lint_output = build_lint_output(&l2transport, &domains);
-    let interface_blocks = get_interface_blocks(config);
-    let simplified_config = build_simplified_config(&domains, &interface_blocks);
+    let simplified_data = collect_simplified_data(config, domains.clone());
+    let simplified_config = build_simplified_config(&simplified_data);
 
     Config {
         domains,

@@ -131,7 +131,7 @@ describe("WASM", () => {
           "",
           "interface BVI300",
           "  description servers",
-          "  ipv4 address 192.168.1.1 255.255.255.0",
+          "  ! -- L3 config reduced --",
         ].join("\n"),
       },
     });

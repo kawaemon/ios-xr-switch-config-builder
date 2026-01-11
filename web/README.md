@@ -40,8 +40,10 @@ interface FortyGigE0/0/0/46
 
 interface BVI300
   description servers
-  ipv4 address 192.168.1.1 255.255.255.0
+  ! -- L3 config reduced --
 ```
+
+簡略化したconfigでは、BVIの存在とdescriptionだけを示し、L3の詳細は省略する。
 
 また変更を加えるには
 
