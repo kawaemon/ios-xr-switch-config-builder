@@ -1,4 +1,4 @@
-import { Badge, Paper, Stack, Table, Text } from "@mantine/core";
+import { Paper, Stack, Table, Text } from "@mantine/core";
 import { formatVlanRanges } from "../utils/formatVlanRanges";
 
 export type BridgeTableRow = {
@@ -41,9 +41,7 @@ export function BridgeSummaryCard({
                 <Table.Tr key={row.baseInterface}>
                   <Table.Td>{row.baseInterface}</Table.Td>
                   <Table.Td>
-                    <Badge variant="dot" color="blue">
-                      {formatVlanRanges(row.vlanTags)}
-                    </Badge>
+                    <Text fw={500}>{formatVlanRanges(row.vlanTags)}</Text>
                   </Table.Td>
                 </Table.Tr>
               ))}

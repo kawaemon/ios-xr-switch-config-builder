@@ -25,5 +25,5 @@ export function formatVlanRanges(tags: ReadonlyArray<number>): string {
     rangeStart === prev ? `${rangeStart}` : `${rangeStart} to ${prev}`
   );
 
-  return segments.join(", ");
+  return segments.join(" ");
 }
