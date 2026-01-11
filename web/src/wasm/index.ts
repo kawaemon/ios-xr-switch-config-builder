@@ -1,7 +1,13 @@
-export type NcsWasmModule = typeof import("./pkg/ncs_wasm.js");
+import wasmInit, * as wasmModule from "./pkg/ncs_wasm.js";
+
+export type NcsWasmModule = typeof wasmModule;
+
+let initialized = false;
 
 export async function initWasm(): Promise<NcsWasmModule> {
-  const module = await import("./pkg/ncs_wasm.js");
-  await module.default();
-  return module;
+  if (!initialized) {
+    await wasmInit();
+    initialized = true;
+  }
+  return wasmModule;
 }

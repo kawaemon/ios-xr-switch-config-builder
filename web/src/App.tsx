@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import defaultConfig from "../.kprivate/config.txt?raw";
 import { Container, Stack } from "@mantine/core";
-import { main } from "./a0_business/a1_semantics";
+import * as wasm from "./wasm/pkg/ncs_wasm";
 import { LintStatusHeader } from "./components/LintStatusHeader";
 import {
   BridgeSummaryCard,
@@ -18,9 +18,9 @@ function App() {
   const [isLintModalOpen, setLintModalOpen] = useState(false);
   const isConfigEmpty = src.trim().length === 0;
   const currentConfig = useMemo(() => {
-    return main(src);
+    return wasm.analyze_config(src);
   }, [src]);
-  const lintOutput = currentConfig.lint().trim();
+  const lintOutput = currentConfig.lintOutput.trim();
   const hasLintIssues = lintOutput.length > 0;
   const bridgeTableRows = useMemo<BridgeTableRow[]>(() => {
     if (hasLintIssues) {
