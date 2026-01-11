@@ -7,11 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "wasm:build": "wasm-pack build wasm --target bundler --out-dir ../src/wasm/pkg"
   },
   "dependencies": {
     "@mantine/core": "^8.3.7",
     "@mantine/hooks": "^8.3.7",
+    "@tabler/icons-react": "^3.20.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
