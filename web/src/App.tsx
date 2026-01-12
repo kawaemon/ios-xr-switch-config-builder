@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 
 import defaultConfig from "../.kprivate/config.txt?raw";
-import { Container, Stack } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
+import { Box, Flex } from "@mantine/core";
 import * as wasmModule from "./wasm/pkg/ncs_wasm";
 import { LintStatusHeader } from "./components/LintStatusHeader";
 import { ConfigEditorModal } from "./components/ConfigEditorModal";
@@ -47,7 +46,6 @@ function App() {
   const [draftConfig, setDraftConfig] = useState(defaultConfig);
   const [isLintModalOpen, setLintModalOpen] = useState(false);
   const [isExampleModalOpen, setExampleModalOpen] = useState(false);
-  const isTwoColumn = useMediaQuery("(min-width: 62em)");
   const isConfigEmpty = src.trim().length === 0;
   const currentConfig = useMemo(() => {
     return wasm.analyze_config(src);
@@ -82,50 +80,39 @@ function App() {
 
   return (
     <>
-      <Container size="xl" py="xl">
-        <Stack gap="xl">
-          <LintStatusHeader
-            showLintDetailButton={showLintDetailButton}
-            onOpenLintModal={() => setLintModalOpen(true)}
-            onOpenConfigModal={openConfigModal}
-          />
+      <Flex h="100vh" direction="column" p="xl" gap="xl">
+        <LintStatusHeader
+          showLintDetailButton={showLintDetailButton}
+          onOpenLintModal={() => setLintModalOpen(true)}
+          onOpenConfigModal={openConfigModal}
+        />
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isTwoColumn
-                ? "minmax(0, 1fr) minmax(0, 1fr)"
-                : "1fr",
-              gap: "var(--mantine-spacing-xl)",
-              alignItems: "stretch",
-            }}
-          >
-            <div
-              style={{
-                gridRow: isTwoColumn ? "span 2" : "auto",
-                height: "100%",
-              }}
-            >
-              <ChangeInputCard
-                value={changeInput}
-                onChange={setChangeInput}
-                onOpenExamples={() => setExampleModalOpen(true)}
-                fullHeight={isTwoColumn}
+        <Flex flex={1} gap="xl" mih={0}>
+          <Box flex={1} miw={0}>
+            <ChangeInputCard
+              value={changeInput}
+              onChange={setChangeInput}
+              onOpenExamples={() => setExampleModalOpen(true)}
+            />
+          </Box>
+
+          <Flex direction="column" flex={1} gap="xl" miw={0}>
+            <Box flex={1} mih={0}>
+              <GeneratedChangeCard
+                value={changeResult.changeOutput}
+                errorMessage={changeResult.errorMessage}
               />
-            </div>
+            </Box>
 
-            <GeneratedChangeCard
-              value={changeResult.changeOutput}
-              errorMessage={changeResult.errorMessage}
-            />
-
-            <SimplifiedConfigCard
-              value={simplifiedConfig}
-              placeholderMessage={simplifiedPlaceholderMessage}
-            />
-          </div>
-        </Stack>
-      </Container>
+            <Box flex={1} mih={0}>
+              <SimplifiedConfigCard
+                value={simplifiedConfig}
+                placeholderMessage={simplifiedPlaceholderMessage}
+              />
+            </Box>
+          </Flex>
+        </Flex>
+      </Flex>
 
       <ConfigEditorModal
         opened={isConfigModalOpen}

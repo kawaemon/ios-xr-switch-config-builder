@@ -10,10 +10,8 @@ export type CodeMirrorTextareaProps = {
   onChange?: (value: string) => void;
   readOnly?: boolean;
   placeholder?: string;
-  minRows?: number;
   showLineNumbers?: boolean;
   completionSource?: CompletionSource;
-  height?: string;
 };
 
 export function CodeMirrorTextarea({
@@ -21,22 +19,11 @@ export function CodeMirrorTextarea({
   onChange,
   readOnly = false,
   placeholder,
-  minRows = 10,
   showLineNumbers = false,
   completionSource,
-  height,
 }: CodeMirrorTextareaProps) {
-  const resolvedHeight = useMemo(() => {
-    if (height) {
-      return height;
-    }
-
-    const lineHeight = 1.55;
-    const heightEm = minRows * lineHeight;
-    return `calc(${heightEm}em + 1rem)`;
-  }, [height, minRows]);
-
   const colorScheme = useComputedColorScheme("light");
+
   const themeExtension = useMemo(
     () =>
       EditorView.theme(
@@ -44,9 +31,11 @@ export function CodeMirrorTextarea({
           "&": {
             backgroundColor: "var(--mantine-color-body)",
             color: "var(--mantine-color-text)",
+            height: "100%",
           },
-          ".cm-editor": {
-            backgroundColor: "var(--mantine-color-body)",
+          ".cm-scroller": {
+            fontFamily: "var(--mantine-font-family-monospace)",
+            overflow: "auto",
           },
           ".cm-content": {
             caretColor: "var(--mantine-color-text)",
@@ -66,9 +55,6 @@ export function CodeMirrorTextarea({
           },
           ".cm-activeLine, .cm-activeLineGutter": {
             backgroundColor: "var(--mantine-color-default-hover)",
-          },
-          ".cm-scroller": {
-            fontFamily: "var(--mantine-font-family-monospace)",
           },
         },
         { dark: colorScheme === "dark" }
@@ -95,7 +81,7 @@ export function CodeMirrorTextarea({
   return (
     <CodeMirror
       value={value}
-      height={resolvedHeight}
+      height="100%"
       theme={colorScheme === "dark" ? "dark" : "light"}
       basicSetup={{
         lineNumbers: false,
@@ -111,7 +97,7 @@ export function CodeMirrorTextarea({
         border: "1px solid var(--mantine-color-default-border)",
         borderRadius: "var(--mantine-radius-sm)",
         backgroundColor: "var(--mantine-color-body)",
-        width: "100%",
+        height: "100%",
       }}
       onChange={onChange}
     />

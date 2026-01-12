@@ -1,4 +1,5 @@
-import { Paper, Stack, Text, Textarea } from "@mantine/core";
+import { Box, Flex, Paper, Text } from "@mantine/core";
+import { CodeMirrorTextarea } from "./CodeMirrorTextarea";
 
 type SimplifiedConfigCardProps = {
   placeholderMessage: string;
@@ -10,29 +11,17 @@ export function SimplifiedConfigCard({
   value,
 }: SimplifiedConfigCardProps) {
   return (
-    <Paper withBorder radius="md" p="lg" style={{ height: "100%" }}>
-      <Stack gap="sm" style={{ height: "100%" }}>
-        <div>
-          <Text fw={600}>現在の設定</Text>
-        </div>
-        <Textarea
-          value={value}
-          readOnly
-          autosize={false}
-          minRows={16}
-          placeholder={placeholderMessage}
-          spellCheck={false}
-          style={{ flex: 1 }}
-          styles={{
-            input: {
-              fontFamily: "var(--mantine-font-family-monospace)",
-              height: "100%",
-              minHeight: 0,
-              overflowY: "auto",
-            },
-          }}
-        />
-      </Stack>
+    <Paper withBorder radius="md" p="lg" h="100%">
+      <Flex direction="column" h="100%" gap="sm">
+        <Text fw={600}>現在の設定</Text>
+        <Box flex={1} mih={0}>
+          <CodeMirrorTextarea
+            value={value}
+            readOnly
+            placeholder={placeholderMessage}
+          />
+        </Box>
+      </Flex>
     </Paper>
   );
 }

@@ -1,13 +1,6 @@
-import {
-  Alert,
-  Paper,
-  Stack,
-  Text,
-  Textarea,
-  ActionIcon,
-  Tooltip,
-} from "@mantine/core";
+import { Alert, Box, Flex, Paper, Text, ActionIcon, Tooltip } from "@mantine/core";
 import { IconAlertCircle, IconCopy } from "@tabler/icons-react";
+import { CodeMirrorTextarea } from "./CodeMirrorTextarea";
 
 type GeneratedChangeCardProps = {
   value: string;
@@ -19,12 +12,10 @@ export function GeneratedChangeCard({
   errorMessage,
 }: GeneratedChangeCardProps) {
   return (
-    <Paper withBorder radius="md" p="lg" style={{ height: "100%" }}>
-      <Stack gap="sm" style={{ height: "100%" }}>
-        <div>
-          <Text fw={600}>ncs config</Text>
-        </div>
-        {errorMessage ? (
+    <Paper withBorder radius="md" p="lg" h="100%">
+      <Flex direction="column" h="100%" gap="sm">
+        <Text fw={600}>ncs config</Text>
+        {errorMessage && (
           <Alert
             variant="light"
             color="red"
@@ -34,24 +25,12 @@ export function GeneratedChangeCard({
           >
             <Text size="sm">{errorMessage}</Text>
           </Alert>
-        ) : null}
-        <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-          <Textarea
+        )}
+        <Box pos="relative" flex={1} mih={0}>
+          <CodeMirrorTextarea
             value={value}
             readOnly
-            autosize={false}
-            minRows={12}
-            spellCheck={false}
-            style={{ height: "100%" }}
-            styles={{
-              input: {
-                fontFamily: "var(--mantine-font-family-monospace)",
-                height: "100%",
-                minHeight: 0,
-                overflowY: "auto",
-                paddingRight: "3rem",
-              },
-            }}
+            placeholder="生成結果がここに表示されます"
           />
           <Tooltip
             label={
@@ -67,13 +46,15 @@ export function GeneratedChangeCard({
                 void navigator.clipboard.writeText(value);
               }}
               disabled={!value}
-              style={{ position: "absolute", top: "8px", right: "8px" }}
+              pos="absolute"
+              top={8}
+              right={8}
             >
               <IconCopy size={16} />
             </ActionIcon>
           </Tooltip>
-        </div>
-      </Stack>
+        </Box>
+      </Flex>
     </Paper>
   );
 }

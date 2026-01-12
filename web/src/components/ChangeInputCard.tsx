@@ -1,4 +1,4 @@
-import { Button, Group, Paper, Text } from "@mantine/core";
+import { Button, Flex, Group, Paper, Text } from "@mantine/core";
 import type { Completion, CompletionSource } from "@codemirror/autocomplete";
 import { CodeMirrorTextarea } from "./CodeMirrorTextarea";
 
@@ -6,7 +6,6 @@ type ChangeInputCardProps = {
   value: string;
   onChange: (value: string) => void;
   onOpenExamples: () => void;
-  fullHeight?: boolean;
 };
 
 const changeCommandCompletions: Completion[] = [
@@ -74,25 +73,10 @@ export function ChangeInputCard({
   value,
   onChange,
   onOpenExamples,
-  fullHeight = false,
 }: ChangeInputCardProps) {
-  const cardStyle = fullHeight ? { height: "100%" } : undefined;
-  const contentStyle = fullHeight
-    ? {
-        display: "grid",
-        gridTemplateRows: "auto 1fr",
-        gap: "var(--mantine-spacing-sm)",
-        height: "100%",
-      }
-    : {
-        display: "grid",
-        gridTemplateRows: "auto auto",
-        gap: "var(--mantine-spacing-sm)",
-      };
-
   return (
-    <Paper withBorder radius="md" p="lg" style={cardStyle}>
-      <div style={contentStyle}>
+    <Paper withBorder radius="md" p="lg" h="100%">
+      <Flex direction="column" h="100%" gap="sm">
         <Group justify="space-between" align="center">
           <Text fw={600}>変更コマンド</Text>
           <Button variant="light" size="xs" onClick={onOpenExamples}>
@@ -101,14 +85,12 @@ export function ChangeInputCard({
         </Group>
         <CodeMirrorTextarea
           value={value}
-          minRows={14}
-          height={fullHeight ? "100%" : undefined}
           placeholder="変更を入力してください"
           onChange={onChange}
           showLineNumbers
           completionSource={changeCommandCompletionSource}
         />
-      </div>
+      </Flex>
     </Paper>
   );
 }

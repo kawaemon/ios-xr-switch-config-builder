@@ -1,5 +1,5 @@
 import { Paper, Stack, Table, Text } from "@mantine/core";
-import { formatVlanRanges } from "../utils/formatVlanRanges";
+import { formatVlanRanges } from "../wasm/pkg/formatVlanRanges";
 
 export type BridgeTableRow = {
   baseInterface: string;
