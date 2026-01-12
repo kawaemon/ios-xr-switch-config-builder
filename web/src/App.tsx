@@ -22,25 +22,22 @@ type NcsWasmModule = typeof wasmModule & {
 const wasm = wasmModule as NcsWasmModule;
 
 const demoChangeInput = [
-  "vlan database",
-  "  vlan 350 name demo-servers",
-  "  vlan 500 name demo-mgmt",
-  "",
   "interface FortyGigE0/0/0/46",
+  "  description To:demo-port",
+  "  switchport mode trunk",
   "  switchport trunk allowed vlan add 350",
   "  switchport trunk allowed vlan remove 300",
   "",
   "interface HundredGigE0/0/0/23",
-  "  description To:demo-port",
+  "  description To:demo-uplink",
   "  switchport mode trunk",
   "  switchport trunk allowed vlan add 350 500",
   "",
-  "interface HundredGigE0/0/0/24",
-  "  description To:demo-access",
-  "  switchport mode access",
-  "  switchport access vlan 500",
-  "",
   "interface BVI500",
+  "",
+  "vlan database",
+  "  vlan 350 name demo-servers",
+  "  vlan 500 name demo-mgmt",
 ].join("\n");
 
 function App() {

@@ -11,16 +11,6 @@ type ChangeInputCardProps = {
 
 const changeCommandCompletions: Completion[] = [
   {
-    label: "vlan database",
-    type: "keyword",
-    detail: "VLAN 定義の開始",
-  },
-  {
-    label: "vlan 300 name ",
-    type: "variable",
-    detail: "VLAN 名の登録",
-  },
-  {
     label: "interface FortyGigE0/0/0/",
     type: "variable",
     detail: "40G ポートの設定",
@@ -56,14 +46,14 @@ const changeCommandCompletions: Completion[] = [
     detail: "トランクから VLAN を除外",
   },
   {
-    label: "switchport mode access",
+    label: "vlan database",
     type: "keyword",
-    detail: "アクセスモード",
+    detail: "VLAN 定義の開始",
   },
   {
-    label: "switchport access vlan ",
-    type: "keyword",
-    detail: "アクセス VLAN の指定",
+    label: "vlan 300 name ",
+    type: "variable",
+    detail: "VLAN 名の登録",
   },
 ];
 

@@ -181,8 +181,8 @@ interface FortyGigE0/0/0/47
   switchport trunk allowed vlan add 300 500
 interface FortyGigE0/0/0/48
   description To:ge1/1.mgmt-sw
-  switchport mode access
-  switchport access vlan 500
+  switchport mode trunk
+  switchport trunk allowed vlan add 500
 
 interface BVI500
 `.trim();
@@ -276,6 +276,23 @@ interface BVI500
 
     expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
       /interface block must contain supported statements/
+    );
+  });
+
+  it("rejects access switchport mode", () => {
+    const baseConfig = iosxrConfig;
+    const changeInput = `
+    vlan database
+      vlan 300 name demo
+
+    interface FortyGigE0/0/0/46
+      description To:eth1.server1
+      switchport mode access
+      switchport access vlan 300
+    `;
+
+    expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
+      /switchport mode access is not supported/
     );
   });
 

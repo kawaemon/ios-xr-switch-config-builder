@@ -14,15 +14,13 @@ type GeneratedChangeCardProps = {
   errorMessage: string;
 };
 
-const generatedChangeHeight = "22rem";
-
 export function GeneratedChangeCard({
   value,
   errorMessage,
 }: GeneratedChangeCardProps) {
   return (
-    <Paper withBorder radius="md" p="lg">
-      <Stack gap="sm">
+    <Paper withBorder radius="md" p="lg" style={{ height: "100%" }}>
+      <Stack gap="sm" style={{ height: "100%" }}>
         <div>
           <Text fw={600}>ncs config</Text>
         </div>
@@ -37,16 +35,19 @@ export function GeneratedChangeCard({
             <Text size="sm">{errorMessage}</Text>
           </Alert>
         ) : null}
-        <div style={{ position: "relative" }}>
+        <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
           <Textarea
             value={value}
             readOnly
+            autosize={false}
+            minRows={12}
             spellCheck={false}
+            style={{ height: "100%" }}
             styles={{
               input: {
                 fontFamily: "var(--mantine-font-family-monospace)",
-                minHeight: generatedChangeHeight,
-                maxHeight: generatedChangeHeight,
+                height: "100%",
+                minHeight: 0,
                 overflowY: "auto",
                 paddingRight: "3rem",
               },

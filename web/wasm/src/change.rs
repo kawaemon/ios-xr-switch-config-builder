@@ -8,7 +8,6 @@ struct InterfaceChange {
     description: Option<String>,
     trunk_add: BTreeSet<u32>,
     trunk_remove: BTreeSet<u32>,
-    access_vlan: Option<u32>,
     mode: InterfaceMode,
 }
 
@@ -16,7 +15,6 @@ struct InterfaceChange {
 enum InterfaceMode {
     Unknown,
     Trunk,
-    Access,
 }
 
 impl Default for InterfaceMode {
@@ -238,24 +236,14 @@ fn desired_vlans(
     change: &InterfaceChange,
     existing: &BTreeSet<u32>,
 ) -> Result<BTreeSet<u32>, String> {
-    match change.mode {
-        InterfaceMode::Access => {
-            let vlan = change
-                .access_vlan
-                .ok_or_else(|| "access vlan is not specified".to_string())?;
-            Ok(BTreeSet::from([vlan]))
-        }
-        _ => {
-            let mut result = existing.clone();
-            for vlan in &change.trunk_add {
-                result.insert(*vlan);
-            }
-            for vlan in &change.trunk_remove {
-                result.remove(vlan);
-            }
-            Ok(result)
-        }
+    let mut result = existing.clone();
+    for vlan in &change.trunk_add {
+        result.insert(*vlan);
     }
+    for vlan in &change.trunk_remove {
+        result.remove(vlan);
+    }
+    Ok(result)
 }
 
 fn parse_change_input(input: &str) -> Result<ChangeSpec, String> {
@@ -384,9 +372,9 @@ fn parse_interface_block(
 
     let mut has_supported_stmt = false;
     let desc_re = regex!(r"^description\s+(.+)$");
-    let mode_re = regex!(r"^switchport mode\s+(trunk|access)$");
+    let mode_re = regex!(r"^switchport mode\s+(trunk)$");
+    let mode_any_re = regex!(r"^switchport mode\s+(.+)$");
     let trunk_re = regex!(r"^switchport trunk allowed vlan (add|remove)\s+(.+)$");
-    let access_re = regex!(r"^switchport access vlan\s+(\d+)$");
 
     for stmt in block.stmts().filter_map(|s| s.as_stmt()) {
         let stmt_text = stmt.stmt();
@@ -403,19 +391,29 @@ fn parse_interface_block(
             continue;
         }
 
-        if let Some(caps) = mode_re.captures(stmt_text) {
+        if mode_re.captures(stmt_text).is_some() {
+            update_mode(&mut interface_change, InterfaceMode::Trunk)?;
+            has_supported_stmt = true;
+            continue;
+        }
+
+        if let Some(caps) = mode_any_re.captures(stmt_text) {
             let mode = caps
                 .get(1)
                 .map(|m| m.as_str().to_string())
                 .unwrap_or_default();
-            let interface_mode = match mode.as_str() {
-                "trunk" => InterfaceMode::Trunk,
-                "access" => InterfaceMode::Access,
-                _ => InterfaceMode::Unknown,
-            };
-            update_mode(&mut interface_change, interface_mode)?;
-            has_supported_stmt = true;
-            continue;
+            return Err(format!(
+                "switchport mode {} is not supported{}",
+                mode,
+                format_line_suffix(line_no)
+            ));
+        }
+
+        if stmt_text.starts_with("switchport access vlan") {
+            return Err(format!(
+                "switchport access is not supported{}",
+                format_line_suffix(line_no)
+            ));
         }
 
         if let Some(caps) = trunk_re.captures(stmt_text) {
@@ -429,17 +427,6 @@ fn parse_interface_block(
                 .unwrap_or_default();
             update_mode(&mut interface_change, InterfaceMode::Trunk)?;
             apply_trunk_action(&mut interface_change, &action, &list)?;
-            has_supported_stmt = true;
-            continue;
-        }
-
-        if let Some(caps) = access_re.captures(stmt_text) {
-            update_mode(&mut interface_change, InterfaceMode::Access)?;
-            let vlan = caps
-                .get(1)
-                .and_then(|m| m.as_str().parse::<u32>().ok())
-                .ok_or_else(|| "invalid access vlan".to_string())?;
-            interface_change.access_vlan = Some(vlan);
             has_supported_stmt = true;
             continue;
         }

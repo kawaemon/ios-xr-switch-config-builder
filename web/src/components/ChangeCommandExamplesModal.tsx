@@ -8,11 +8,6 @@ type ChangeCommandExamplesModalProps = {
 
 const examples = [
   {
-    title: "VLAN の追加",
-    description: "VLAN 名を登録します。",
-    lines: ["vlan database", "  vlan 350 name demo-servers"],
-  },
-  {
     title: "トランクポートの設定",
     description: "複数 VLAN を通す場合の例です。",
     lines: [
@@ -24,19 +19,14 @@ const examples = [
     ],
   },
   {
-    title: "アクセスポートの設定",
-    description: "単一 VLAN を収容する例です。",
-    lines: [
-      "interface FortyGigE0/0/0/48",
-      "  description To:mgmt-sw",
-      "  switchport mode access",
-      "  switchport access vlan 500",
-    ],
-  },
-  {
     title: "BVI の作成",
     description: "L3 設定は別途投入します。",
     lines: ["interface BVI500"],
+  },
+  {
+    title: "VLAN の追加",
+    description: "VLAN 名を登録します。",
+    lines: ["vlan database", "  vlan 350 name demo-servers"],
   },
 ];
 
