@@ -1,5 +1,6 @@
 use wasm_bindgen::prelude::*;
 
+mod change;
 mod parse;
 mod regex;
 mod semantics;
@@ -7,6 +8,7 @@ mod simplified_config;
 
 use crate::parse::Node as ParsedNode;
 
+pub use change::generate_change;
 pub use parse::tokenize;
 pub use semantics::{analyze, Config};
 
@@ -121,4 +123,20 @@ pub fn lint_config(config_text: String) -> Result<String, String> {
 pub fn parse_config(config_text: String) -> Result<Vec<Node>, String> {
     let nodes = tokenize(&config_text);
     Ok(nodes.iter().map(convert_node_to_wasm).collect())
+}
+
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Clone)]
+pub struct GeneratedChange {
+    #[wasm_bindgen(js_name = changeOutput)]
+    pub change_output: String,
+}
+
+#[wasm_bindgen]
+pub fn generate_change_config(
+    base_config: String,
+    change_input: String,
+) -> Result<GeneratedChange, String> {
+    let change_output = generate_change(&base_config, &change_input)?;
+    Ok(GeneratedChange { change_output })
 }
