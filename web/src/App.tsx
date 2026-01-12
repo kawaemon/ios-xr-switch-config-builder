@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import defaultConfig from "../.kprivate/config.txt?raw";
 import { Container, Stack } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import * as wasmModule from "./wasm/pkg/ncs_wasm";
 import { LintStatusHeader } from "./components/LintStatusHeader";
 import { ConfigEditorModal } from "./components/ConfigEditorModal";
@@ -9,6 +10,7 @@ import { LintResultModal } from "./components/LintResultModal";
 import { SimplifiedConfigCard } from "./components/SimplifiedConfigCard";
 import { ChangeInputCard } from "./components/ChangeInputCard";
 import { GeneratedChangeCard } from "./components/GeneratedChangeCard";
+import { ChangeCommandExamplesModal } from "./components/ChangeCommandExamplesModal";
 
 type NcsWasmModule = typeof wasmModule & {
   generate_change_config: (
@@ -47,6 +49,8 @@ function App() {
   const [isConfigModalOpen, setConfigModalOpen] = useState(false);
   const [draftConfig, setDraftConfig] = useState(defaultConfig);
   const [isLintModalOpen, setLintModalOpen] = useState(false);
+  const [isExampleModalOpen, setExampleModalOpen] = useState(false);
+  const isTwoColumn = useMediaQuery("(min-width: 62em)");
   const isConfigEmpty = src.trim().length === 0;
   const currentConfig = useMemo(() => {
     return wasm.analyze_config(src);
@@ -81,7 +85,7 @@ function App() {
 
   return (
     <>
-      <Container size="lg" py="xl">
+      <Container size="xl" py="xl">
         <Stack gap="xl">
           <LintStatusHeader
             showLintDetailButton={showLintDetailButton}
@@ -89,17 +93,40 @@ function App() {
             onOpenConfigModal={openConfigModal}
           />
 
-          <ChangeInputCard value={changeInput} onChange={setChangeInput} />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isTwoColumn
+                ? "minmax(0, 1fr) minmax(0, 1fr)"
+                : "1fr",
+              gap: "var(--mantine-spacing-xl)",
+              alignItems: "stretch",
+            }}
+          >
+            <div
+              style={{
+                gridRow: isTwoColumn ? "span 2" : "auto",
+                height: "100%",
+              }}
+            >
+              <ChangeInputCard
+                value={changeInput}
+                onChange={setChangeInput}
+                onOpenExamples={() => setExampleModalOpen(true)}
+                fullHeight={isTwoColumn}
+              />
+            </div>
 
-          <GeneratedChangeCard
-            value={changeResult.changeOutput}
-            errorMessage={changeResult.errorMessage}
-          />
+            <GeneratedChangeCard
+              value={changeResult.changeOutput}
+              errorMessage={changeResult.errorMessage}
+            />
 
-          <SimplifiedConfigCard
-            value={simplifiedConfig}
-            placeholderMessage={simplifiedPlaceholderMessage}
-          />
+            <SimplifiedConfigCard
+              value={simplifiedConfig}
+              placeholderMessage={simplifiedPlaceholderMessage}
+            />
+          </div>
         </Stack>
       </Container>
 
@@ -118,6 +145,11 @@ function App() {
         opened={isLintModalOpen}
         lintOutput={lintOutput}
         onClose={() => setLintModalOpen(false)}
+      />
+
+      <ChangeCommandExamplesModal
+        opened={isExampleModalOpen}
+        onClose={() => setExampleModalOpen(false)}
       />
     </>
   );

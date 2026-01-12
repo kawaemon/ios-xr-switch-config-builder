@@ -13,10 +13,7 @@ export function SimplifiedConfigCard({
     <Paper withBorder radius="md" p="lg">
       <Stack gap="sm">
         <div>
-          <Text fw={600}>簡略化Config</Text>
-          <Text size="sm" c="dimmed">
-            ncs configを読みやすいスイッチ形式に変換して表示します。
-          </Text>
+          <Text fw={600}>現在の設定</Text>
         </div>
         <Textarea
           value={value}

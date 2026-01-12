@@ -14,6 +14,8 @@ type GeneratedChangeCardProps = {
   errorMessage: string;
 };
 
+const generatedChangeHeight = "22rem";
+
 export function GeneratedChangeCard({
   value,
   errorMessage,
@@ -39,13 +41,12 @@ export function GeneratedChangeCard({
           <Textarea
             value={value}
             readOnly
-            minRows={16}
-            maxRows={20}
             spellCheck={false}
-            autosize
             styles={{
               input: {
                 fontFamily: "var(--mantine-font-family-monospace)",
+                minHeight: generatedChangeHeight,
+                maxHeight: generatedChangeHeight,
                 overflowY: "auto",
                 paddingRight: "3rem",
               },

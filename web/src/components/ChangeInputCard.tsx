@@ -1,26 +1,124 @@
-import { Paper, Stack, Text } from "@mantine/core";
+import { Button, Group, Paper, Text } from "@mantine/core";
+import type { Completion, CompletionSource } from "@codemirror/autocomplete";
 import { CodeMirrorTextarea } from "./CodeMirrorTextarea";
 
 type ChangeInputCardProps = {
   value: string;
   onChange: (value: string) => void;
+  onOpenExamples: () => void;
+  fullHeight?: boolean;
 };
 
-export function ChangeInputCard({ value, onChange }: ChangeInputCardProps) {
+const changeCommandCompletions: Completion[] = [
+  {
+    label: "vlan database",
+    type: "keyword",
+    detail: "VLAN 定義の開始",
+  },
+  {
+    label: "vlan 300 name ",
+    type: "variable",
+    detail: "VLAN 名の登録",
+  },
+  {
+    label: "interface FortyGigE0/0/0/",
+    type: "variable",
+    detail: "40G ポートの設定",
+  },
+  {
+    label: "interface HundredGigE0/0/0/",
+    type: "variable",
+    detail: "100G ポートの設定",
+  },
+  {
+    label: "interface BVI",
+    type: "variable",
+    detail: "BVI の作成",
+  },
+  {
+    label: "description ",
+    type: "text",
+    detail: "インターフェースの説明",
+  },
+  {
+    label: "switchport mode trunk",
+    type: "keyword",
+    detail: "トランクモード",
+  },
+  {
+    label: "switchport trunk allowed vlan add ",
+    type: "keyword",
+    detail: "トランクに VLAN を追加",
+  },
+  {
+    label: "switchport trunk allowed vlan remove ",
+    type: "keyword",
+    detail: "トランクから VLAN を除外",
+  },
+  {
+    label: "switchport mode access",
+    type: "keyword",
+    detail: "アクセスモード",
+  },
+  {
+    label: "switchport access vlan ",
+    type: "keyword",
+    detail: "アクセス VLAN の指定",
+  },
+];
+
+const changeCommandCompletionSource: CompletionSource = (context) => {
+  const word = context.matchBefore(/[-A-Za-z0-9/._\t ]*$/);
+  if (word?.text === "" && !context.explicit) {
+    return null;
+  }
+
+  return {
+    from: word ? word.from : context.pos,
+    options: changeCommandCompletions,
+    validFor: /^[-A-Za-z0-9/._\t ]*$/,
+  };
+};
+
+export function ChangeInputCard({
+  value,
+  onChange,
+  onOpenExamples,
+  fullHeight = false,
+}: ChangeInputCardProps) {
+  const cardStyle = fullHeight ? { height: "100%" } : undefined;
+  const contentStyle = fullHeight
+    ? {
+        display: "grid",
+        gridTemplateRows: "auto 1fr",
+        gap: "var(--mantine-spacing-sm)",
+        height: "100%",
+      }
+    : {
+        display: "grid",
+        gridTemplateRows: "auto auto",
+        gap: "var(--mantine-spacing-sm)",
+      };
+
   return (
-    <Paper withBorder radius="md" p="lg">
-      <Stack gap="sm">
-        <div>
+    <Paper withBorder radius="md" p="lg" style={cardStyle}>
+      <div style={contentStyle}>
+        <Group justify="space-between" align="center">
           <Text fw={600}>変更コマンド</Text>
-        </div>
+          <Button variant="light" size="xs" onClick={onOpenExamples}>
+            コマンド例
+          </Button>
+        </Group>
         <CodeMirrorTextarea
           value={value}
           minRows={14}
+          height={fullHeight ? "100%" : undefined}
           placeholder="変更を入力してください"
           onChange={onChange}
           showLineNumbers
+          completionSource={changeCommandCompletionSource}
         />
-      </Stack>
+      </div>
     </Paper>
   );
 }
