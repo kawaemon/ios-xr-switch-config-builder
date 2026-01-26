@@ -9,6 +9,7 @@ struct InterfaceChange {
     trunk_add: BTreeMap<u32, usize>,      // vlan -> line number
     trunk_remove: BTreeMap<u32, usize>,   // vlan -> line number
     mode: InterfaceMode,
+    other_statements: Vec<String>,        // Non-switchport statements to pass through
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -145,6 +146,18 @@ pub fn generate_change(base_config: &str, change_input: &str) -> Result<String, 
     }
 
     let mut lines: Vec<String> = Vec::new();
+
+    // Output physical interface configuration changes
+    for (baseif, change) in &change_spec.interface_changes {
+        if !change.other_statements.is_empty() {
+            lines.push(format!("interface {}", baseif));
+            for stmt in &change.other_statements {
+                lines.push(format!("  {}", stmt));
+            }
+            lines.push("exit".to_string());
+            lines.push(String::new());
+        }
+    }
 
     if !removal_cmds.is_empty() {
         lines.extend(removal_cmds);
@@ -413,7 +426,8 @@ fn parse_interface_block(
                 .map(|m| m.as_str().trim().to_string())
                 .unwrap_or_default();
             if !desc.is_empty() {
-                interface_change.description = Some(desc);
+                interface_change.description = Some(desc.clone());
+                interface_change.other_statements.push(format!("description {}", desc));
             }
             has_supported_stmt = true;
             continue;
@@ -465,6 +479,12 @@ fn parse_interface_block(
             apply_trunk_action(&mut interface_change, &action, &list, stmt_line_no)?;
             has_supported_stmt = true;
             continue;
+        }
+
+        // Pass through any other statements that are not switchport-related
+        if !stmt_text.starts_with("switchport") {
+            interface_change.other_statements.push(stmt_text.to_string());
+            has_supported_stmt = true;
         }
     }
 

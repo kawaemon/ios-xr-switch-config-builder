@@ -41,7 +41,6 @@ interface FortyGigE0/0/0/46
       "l2vpn",
       "  bridge group VLAN",
       "    bridge-domain VLAN300",
-      "      description old",
       "      no interface FortyGigE0/0/0/46.300",
       "    exit",
       "    bridge-domain VLAN400",
