@@ -76,21 +76,7 @@ pub fn build_simplified_config(data: &SimplifiedConfigData) -> String {
 
     let mut lines: Vec<String> = Vec::new();
 
-    if !vlan_map.is_empty() {
-        lines.push("vlan database".to_string());
-        for (vlan_tag, description) in vlan_map {
-            if let Some(description) = description {
-                lines.push(format!("  vlan {} name {}", vlan_tag, description));
-            } else {
-                lines.push(format!("  vlan {}", vlan_tag));
-            }
-        }
-    }
-
     if !trunk_map.is_empty() {
-        if !lines.is_empty() {
-            lines.push(String::new());
-        }
         for (base_interface, vlan_tags) in trunk_map {
             let vlan_list = format_vlan_ranges(&vlan_tags);
             lines.push(format!("interface {}", base_interface));
@@ -116,6 +102,20 @@ pub fn build_simplified_config(data: &SimplifiedConfigData) -> String {
             }
             lines.push("  ! -- L3 config reduced --".to_string());
             lines.push(String::new());
+        }
+    }
+
+    if !vlan_map.is_empty() {
+        if lines.last().map(|line| !line.is_empty()).unwrap_or(false) {
+            lines.push(String::new());
+        }
+        lines.push("vlan database".to_string());
+        for (vlan_tag, description) in vlan_map {
+            if let Some(description) = description {
+                lines.push(format!("  vlan {} name {}", vlan_tag, description));
+            } else {
+                lines.push(format!("  vlan {}", vlan_tag));
+            }
         }
     }
 
