@@ -168,9 +168,12 @@ pub fn generate_change(base_config: &str, change_input: &str) -> Result<String, 
         lines.push("  bridge group VLAN".to_string());
         for (_, change) in &vlan_changes {
             lines.push(format!("    bridge-domain VLAN{}", change.vlan));
-            if let Some(desc) = &change.description {
-                if !desc.is_empty() {
-                    lines.push(format!("      description {}", desc));
+            // Only output description if explicitly specified in change_spec
+            if change_spec.vlans.contains_key(&change.vlan) {
+                if let Some(desc) = &change.description {
+                    if !desc.is_empty() {
+                        lines.push(format!("      description {}", desc));
+                    }
                 }
             }
             for removal in &change.removals {

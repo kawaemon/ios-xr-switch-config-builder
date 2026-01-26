@@ -15,6 +15,15 @@ pub(crate) fn split_subinterface_id(name: &str) -> Result<(String, Option<u32>),
     Ok((baseif, subif))
 }
 
+/// Extract speed type and port number from interface name
+/// e.g., "FortyGigE0/0/0/1" -> Some(("FortyGigE", "0/0/0/1"))
+pub(crate) fn parse_interface_name(name: &str) -> Option<(String, String)> {
+    let caps = regex!(r"^(FortyGigE|HundredGigE|TenGigE|GigabitEthernet)(.+)$").captures(name)?;
+    let speed_type = caps.get(1)?.as_str().to_string();
+    let port_number = caps.get(2)?.as_str().to_string();
+    Some((speed_type, port_number))
+}
+
 #[derive(Debug, Clone)]
 pub struct L2TransportConfig {
     pub baseif: String,
