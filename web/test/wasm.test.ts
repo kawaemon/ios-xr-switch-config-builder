@@ -4,7 +4,7 @@ import * as wasmModule from "../src/wasm/pkg/ncs_wasm";
 type WasmModule = typeof wasmModule & {
   generate_change_config: (
     baseConfig: string,
-    changeInput: string
+    changeInput: string,
   ) => { changeOutput: string };
 };
 
@@ -129,9 +129,6 @@ describe("WASM", () => {
         ],
         lintOutput: "",
         simplifiedConfig: [
-          "vlan database",
-          "  vlan 300 name servers",
-          "",
           "interface FortyGigE0/0/0/46",
           "  description To:eth1.server1",
           "  mru 9216",
@@ -141,6 +138,9 @@ describe("WASM", () => {
           "interface BVI300",
           "  description servers",
           "  ! -- L3 config reduced --",
+          "",
+          "vlan database",
+          "  vlan 300 name servers",
         ].join("\n"),
       },
     });
@@ -239,14 +239,17 @@ interface BVI500
         "    bridge-domain VLAN500",
         "      description mgmt",
         "      interface FortyGigE0/0/0/46.500",
+        "      exit",
         "      interface FortyGigE0/0/0/47.500",
+        "      exit",
         "      interface FortyGigE0/0/0/48.500",
+        "      exit",
         "      routed interface BVI500",
         "      exit",
         "    exit",
         "  exit",
         "exit",
-      ].join("\n")
+      ].join("\n"),
     );
   });
 
@@ -261,7 +264,7 @@ interface BVI500
     `;
 
     expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-      "vlan name is required"
+      "vlan name is required",
     );
   });
 
@@ -275,7 +278,7 @@ interface BVI500
     `;
 
     expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-      /interface block must contain supported statements/
+      /interface block must contain supported statements/,
     );
   });
 
@@ -292,7 +295,7 @@ interface BVI500
     `;
 
     expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-      /switchport mode access is not supported/
+      /switchport mode access is not supported/,
     );
   });
 
@@ -308,7 +311,7 @@ interface BVI500
     `;
 
     expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-      /interface requires description/
+      /interface requires description/,
     );
   });
 
@@ -341,7 +344,72 @@ interface HundredGigE0/0/0/11
 `.trim();
 
     expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-      /interface requires description: HundredGigE0\/0\/0\/11 \(line 4\)/
+      /interface requires description: HundredGigE0\/0\/0\/11 \(line 4\)/,
+    );
+  });
+
+  it("rejects removal of VLANs that don't exist in base config", () => {
+    const baseConfig = `
+interface FortyGigE0/0/0/46
+  description To:eth1.server1
+  mru 9216
+interface FortyGigE0/0/0/46.300 l2transport
+  description servers,To:eth1.server1
+  encapsulation dot1q 300
+  rewrite ingress tag pop 1 symmetric
+
+interface BVI300
+  description servers
+
+l2vpn
+  bridge group VLAN
+    bridge-domain VLAN300
+      description servers
+      interface FortyGigE0/0/0/46.300
+      routed interface BVI300
+`.trim();
+
+    const changeInput = `
+interface FortyGigE0/0/0/46
+  switchport trunk allowed vlan remove 100
+`.trim();
+
+    // VLAN100 doesn't exist in base config, so it should throw an error with correct line number
+    expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
+      /cannot remove VLAN 100 from interface FortyGigE0\/0\/0\/46: VLAN not present in base config \(line 2\)/,
+    );
+  });
+
+  it("shows correct line number for VLAN removal error in multi-line config", () => {
+    const baseConfig = `
+interface FortyGigE0/0/0/46
+  description To:eth1.server1
+  mru 9216
+interface FortyGigE0/0/0/46.300 l2transport
+  description servers,To:eth1.server1
+  encapsulation dot1q 300
+  rewrite ingress tag pop 1 symmetric
+
+l2vpn
+  bridge group VLAN
+    bridge-domain VLAN300
+      description servers
+      interface FortyGigE0/0/0/46.300
+`.trim();
+
+    const changeInput = `
+vlan database
+  vlan 400 name test
+
+interface FortyGigE0/0/0/46
+  switchport trunk allowed vlan add 400
+  switchport trunk allowed vlan remove 100
+  switchport trunk allowed vlan remove 200
+`.trim();
+
+    // Line 6 has the remove 100 statement
+    expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
+      /cannot remove VLAN 100 from interface FortyGigE0\/0\/0\/46: VLAN not present in base config \(line 6\)/,
     );
   });
 });

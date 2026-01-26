@@ -6,8 +6,8 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 #[derive(Default)]
 struct InterfaceChange {
     description: Option<String>,
-    trunk_add: BTreeSet<u32>,
-    trunk_remove: BTreeSet<u32>,
+    trunk_add: BTreeMap<u32, usize>,      // vlan -> line number
+    trunk_remove: BTreeMap<u32, usize>,   // vlan -> line number
     mode: InterfaceMode,
 }
 
@@ -29,6 +29,7 @@ struct ChangeSpec {
     interface_changes: BTreeMap<String, InterfaceChange>,
     bvi_additions: BTreeSet<u32>,
     interface_lines: HashMap<String, usize>,
+    stmt_lines: HashMap<String, Vec<usize>>,  // stmt text -> line numbers (can have duplicates)
 }
 
 struct BaseContext {
@@ -73,6 +74,19 @@ pub fn generate_change(base_config: &str, change_input: &str) -> Result<String, 
             .get(baseif)
             .cloned()
             .unwrap_or_default();
+
+        // Validate that VLANs to be removed actually exist
+        for (vlan, line_no) in &change.trunk_remove {
+            if !existing.contains(vlan) {
+                return Err(format!(
+                    "cannot remove VLAN {} from interface {}: VLAN not present in base config{}",
+                    vlan,
+                    baseif,
+                    format_line_suffix(Some(*line_no))
+                ));
+            }
+        }
+
         let desired = desired_vlans(change, &existing)?;
 
         let base_desc = change
@@ -167,11 +181,12 @@ pub fn generate_change(base_config: &str, change_input: &str) -> Result<String, 
                     "      interface {}.{}",
                     addition.baseif, addition.vlan
                 ));
+                lines.push("      exit".to_string());
             }
             if change.add_bvi {
                 lines.push(format!("      routed interface BVI{}", change.vlan));
+                lines.push("      exit".to_string());
             }
-            lines.push("      exit".to_string());
             lines.push("    exit".to_string());
         }
         lines.push("  exit".to_string());
@@ -237,10 +252,10 @@ fn desired_vlans(
     existing: &BTreeSet<u32>,
 ) -> Result<BTreeSet<u32>, String> {
     let mut result = existing.clone();
-    for vlan in &change.trunk_add {
+    for vlan in change.trunk_add.keys() {
         result.insert(*vlan);
     }
-    for vlan in &change.trunk_remove {
+    for vlan in change.trunk_remove.keys() {
         result.remove(vlan);
     }
     Ok(result)
@@ -304,6 +319,16 @@ fn prevalidate_lines(input: &str, spec: &mut ChangeSpec) -> Result<(), String> {
             spec.interface_lines
                 .entry(ifname.to_string())
                 .or_insert(line_no);
+        }
+
+        // Track line numbers for all statements (indented lines)
+        let trimmed_stmt = trimmed.trim();
+        if !trimmed_stmt.is_empty() && trimmed != trimmed_stmt {
+            // This is an indented statement
+            spec.stmt_lines
+                .entry(trimmed_stmt.to_string())
+                .or_insert_with(Vec::new)
+                .push(line_no);
         }
     }
 
@@ -426,7 +451,15 @@ fn parse_interface_block(
                 .map(|m| m.as_str().to_string())
                 .unwrap_or_default();
             update_mode(&mut interface_change, InterfaceMode::Trunk)?;
-            apply_trunk_action(&mut interface_change, &action, &list)?;
+
+            // Get line number for this statement
+            let stmt_line_no = spec.stmt_lines
+                .get(stmt_text)
+                .and_then(|lines| lines.first().copied())
+                .or(line_no)
+                .unwrap_or(1);
+
+            apply_trunk_action(&mut interface_change, &action, &list, stmt_line_no)?;
             has_supported_stmt = true;
             continue;
         }
@@ -496,18 +529,19 @@ fn apply_trunk_action(
     change: &mut InterfaceChange,
     action: &str,
     list: &str,
+    line_no: usize,
 ) -> Result<(), String> {
     let vlans = parse_vlan_list(list)?;
 
     match action {
         "add" => {
             for vlan in vlans {
-                change.trunk_add.insert(vlan);
+                change.trunk_add.insert(vlan, line_no);
             }
         }
         "remove" => {
             for vlan in vlans {
-                change.trunk_remove.insert(vlan);
+                change.trunk_remove.insert(vlan, line_no);
             }
         }
         _ => return Err("invalid trunk action".to_string()),
