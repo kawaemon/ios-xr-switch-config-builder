@@ -36,6 +36,7 @@ pub struct SimplifiedConfigData {
     pub domains: Vec<BridgeDomain>,
     pub base_interfaces: BTreeMap<String, Vec<String>>,
     pub bvi_interfaces: BTreeMap<String, Option<String>>,
+    pub bundle_members: BTreeMap<String, BTreeSet<String>>,
 }
 
 impl SimplifiedConfigData {
@@ -43,11 +44,13 @@ impl SimplifiedConfigData {
         domains: Vec<BridgeDomain>,
         base_interfaces: BTreeMap<String, Vec<String>>,
         bvi_interfaces: BTreeMap<String, Option<String>>,
+        bundle_members: BTreeMap<String, BTreeSet<String>>,
     ) -> Self {
         Self {
             domains,
             base_interfaces,
             bvi_interfaces,
+            bundle_members,
         }
     }
 }
@@ -88,6 +91,18 @@ pub fn build_simplified_config(data: &SimplifiedConfigData) -> String {
             lines.push("  switchport mode trunk".to_string());
             lines.push(format!("  switchport trunk allowed vlan add {}", vlan_list));
             lines.push(String::new());
+
+            if let Some(members) = data.bundle_members.get(&base_interface) {
+                for member in members {
+                    lines.push(format!("interface {}", member));
+                    if let Some(stmts) = data.base_interfaces.get(member) {
+                        for stmt in stmts {
+                            lines.push(format!("  {}", stmt));
+                        }
+                    }
+                    lines.push(String::new());
+                }
+            }
         }
     }
 

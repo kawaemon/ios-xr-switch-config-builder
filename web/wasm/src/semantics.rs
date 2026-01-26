@@ -1,7 +1,7 @@
 use crate::parse::{Node, NodeBlock, NodeStmt};
 use crate::regex;
 use crate::simplified_config::{build_simplified_config, SimplifiedConfigData};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use wasm_bindgen::prelude::*;
 
 pub(crate) fn split_subinterface_id(name: &str) -> Result<(String, Option<u32>), String> {
@@ -22,6 +22,15 @@ pub(crate) fn parse_interface_name(name: &str) -> Option<(String, String)> {
     let speed_type = caps.get(1)?.as_str().to_string();
     let port_number = caps.get(2)?.as_str().to_string();
     Some((speed_type, port_number))
+}
+
+fn find_bundle_id(stmts: &[String]) -> Option<u32> {
+    stmts.iter().find_map(|stmt| {
+        regex!(r"^bundle id (\d+)")
+            .captures(stmt)
+            .and_then(|caps| caps.get(1))
+            .and_then(|m| m.as_str().parse::<u32>().ok())
+    })
 }
 
 #[derive(Debug, Clone)]
@@ -182,6 +191,7 @@ fn get_l2_transports(config: &[Node]) -> HashMap<String, Vec<L2TransportConfig>>
 fn collect_simplified_data(config: &[Node], domains: Vec<BridgeDomain>) -> SimplifiedConfigData {
     let mut base_interfaces: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut bvi_interfaces: BTreeMap<String, Option<String>> = BTreeMap::new();
+    let mut bundle_members: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
 
     for node_block in config.iter().filter_map(|node| node.as_block()) {
         let Some(interface_name) = node_block.name.strip_prefix("interface ") else {
@@ -198,7 +208,9 @@ fn collect_simplified_data(config: &[Node], domains: Vec<BridgeDomain>) -> Simpl
                 .filter_map(|node| node.as_stmt())
                 .find_map(|stmt: &NodeStmt| stmt.stmt().strip_prefix("description "))
                 .map(|desc| desc.trim().to_string());
-            bvi_interfaces.entry(interface_name.to_string()).or_insert(description);
+            bvi_interfaces
+                .entry(interface_name.to_string())
+                .or_insert(description);
             continue;
         }
 
@@ -209,11 +221,20 @@ fn collect_simplified_data(config: &[Node], domains: Vec<BridgeDomain>) -> Simpl
             .collect::<Vec<String>>();
 
         if !stmts.is_empty() {
+            if let Some(bundle_id) = find_bundle_id(&stmts) {
+                if parse_interface_name(interface_name).is_some() {
+                    let bundle_if = format!("Bundle-Ether{}", bundle_id);
+                    bundle_members
+                        .entry(bundle_if)
+                        .or_default()
+                        .insert(interface_name.to_string());
+                }
+            }
             base_interfaces.insert(interface_name.to_string(), stmts);
         }
     }
 
-    SimplifiedConfigData::new(domains, base_interfaces, bvi_interfaces)
+    SimplifiedConfigData::new(domains, base_interfaces, bvi_interfaces, bundle_members)
 }
 
 fn build_lint_output(
