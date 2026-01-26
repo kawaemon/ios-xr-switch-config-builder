@@ -24,30 +24,19 @@ export function ConfigEditorModal({
 }: ConfigEditorModalProps) {
   return (
     <Modal opened={opened} onClose={onCancel} title="Config入力" size="xl">
-      <Stack
-        gap="sm"
-        style={{
-          display: "grid",
-          gridTemplateRows: "auto 1fr auto",
-          gap: "var(--mantine-spacing-sm)",
-        }}
-      >
+      <Stack gap="sm">
         <Text size="sm" c="dimmed">
           ここで編集した内容が解析対象になります。
         </Text>
         <Textarea
           value={draftConfig}
           autosize={false}
-          minRows={20}
+          rows={30}
           spellCheck={false}
-          style={{ minHeight: 0 }}
           onChange={(event) => onChangeDraft(event.currentTarget.value)}
           styles={{
             input: {
               fontFamily: "var(--mantine-font-family-monospace)",
-              height: "100%",
-              minHeight: 0,
-              overflowY: "auto",
             },
           }}
         />
