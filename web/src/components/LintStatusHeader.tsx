@@ -37,7 +37,7 @@ export function LintStatusHeader({
   return (
     <Group justify="space-between" align="flex-start" wrap="wrap">
       <Stack gap={4} maw={600}>
-        <Title order={1}>NCS Config Builder</Title>
+        <Title order={1}>IOS XR Switch Config Builder</Title>
         <Text c="dimmed">
           NCS configを一般スイッチ向けの見やすい形式で確認できます。
         </Text>
