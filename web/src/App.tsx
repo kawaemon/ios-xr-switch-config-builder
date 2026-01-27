@@ -11,14 +11,7 @@ import { ChangeInputCard } from "./components/ChangeInputCard";
 import { GeneratedChangeCard } from "./components/GeneratedChangeCard";
 import { ChangeCommandExamplesModal } from "./components/ChangeCommandExamplesModal";
 
-type NcsWasmModule = typeof wasmModule & {
-  generate_change_config: (
-    baseConfig: string,
-    changeInput: string
-  ) => { changeOutput: string };
-};
-
-const wasm = wasmModule as NcsWasmModule;
+const wasm = wasmModule;
 
 const demoChangeInput = [
   "interface FortyGigE0/0/0/46",

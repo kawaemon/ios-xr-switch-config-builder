@@ -1,14 +1,16 @@
 use wasm_bindgen::prelude::*;
 
+mod ast;
 mod change;
+mod error;
 mod parse;
 mod regex;
 mod semantics;
 mod simplified_config;
 
 use crate::parse::Node as ParsedNode;
+use change::ChangeEngine;
 
-pub use change::generate_change;
 pub use parse::tokenize;
 pub use semantics::{analyze, Config};
 
@@ -137,6 +139,8 @@ pub fn generate_change_config(
     base_config: String,
     change_input: String,
 ) -> Result<GeneratedChange, String> {
-    let change_output = generate_change(&base_config, &change_input)?;
-    Ok(GeneratedChange { change_output })
+    let change_output = ChangeEngine::generate(&base_config, &change_input).map_err(|diag| diag.format())?;
+    Ok(GeneratedChange {
+        change_output,
+    })
 }
