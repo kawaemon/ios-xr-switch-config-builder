@@ -1,6 +1,7 @@
 use crate::semantics::{split_subinterface_id, BridgeDomain};
 use std::collections::{BTreeMap, BTreeSet};
 
+/// Format a sorted set of VLAN tags into IOS-style ranges (e.g., `300-305 310`).
 fn format_vlan_ranges(tags: &BTreeSet<u32>) -> String {
     let mut iter = tags.iter();
     let Some(&first) = iter.next() else {
@@ -32,14 +33,20 @@ fn format_vlan_ranges(tags: &BTreeSet<u32>) -> String {
     segments.join(" ")
 }
 
+/// Intermediate representation used to render simplified configuration text.
 pub struct SimplifiedConfigData {
+    /// Bridge-domains discovered from the base config.
     pub domains: Vec<BridgeDomain>,
+    /// Statements for base interfaces keyed by interface name.
     pub base_interfaces: BTreeMap<String, Vec<String>>,
+    /// BVI interfaces and their optional descriptions.
     pub bvi_interfaces: BTreeMap<String, Option<String>>,
+    /// Bundle-Ether members keyed by bundle interface name.
     pub bundle_members: BTreeMap<String, BTreeSet<String>>,
 }
 
 impl SimplifiedConfigData {
+    /// Construct a new simplified config data bundle.
     pub fn new(
         domains: Vec<BridgeDomain>,
         base_interfaces: BTreeMap<String, Vec<String>>,
@@ -55,6 +62,7 @@ impl SimplifiedConfigData {
     }
 }
 
+/// Render the simplified Cisco-like configuration text from collected data.
 pub fn build_simplified_config(data: &SimplifiedConfigData) -> String {
     let mut vlan_map: BTreeMap<u32, Option<String>> = BTreeMap::new();
     let mut trunk_map: BTreeMap<String, BTreeSet<u32>> = BTreeMap::new();

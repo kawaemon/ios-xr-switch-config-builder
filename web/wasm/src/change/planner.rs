@@ -4,19 +4,23 @@
 //! the desired change specification.
 
 use crate::change::model::{
-    BaseContext, ChangePlan, ChangeSpec, InterfaceCreation, VlanChange,
+    BaseContext, ChangePlan, ChangeSpec, InterfaceCreation, VlanChange, VlanId,
 };
 use crate::change::validator::{
     desired_vlans, validate_interface_description, validate_not_bundled_interface,
     validate_vlan_addition, validate_vlan_removals,
 };
 
+/// Builds a concrete change plan from desired input and the existing base context.
 pub struct ChangePlanner<'a> {
+    /// Parsed change specification from user input.
     change_spec: &'a ChangeSpec,
+    /// Context describing the current configuration state.
     base_ctx: &'a BaseContext,
 }
 
 impl<'a> ChangePlanner<'a> {
+    /// Create a planner over the given change spec and base context.
     pub fn new(change_spec: &'a ChangeSpec, base_ctx: &'a BaseContext) -> Self {
         Self {
             change_spec,
@@ -24,16 +28,12 @@ impl<'a> ChangePlanner<'a> {
         }
     }
 
+    /// Produce a `ChangePlan`, validating inputs along the way.
     pub fn plan(&self) -> Result<ChangePlan, crate::error::Diagnostic> {
         let mut plan = ChangePlan::default();
 
         for (baseif, change) in &self.change_spec.interface_changes {
-            let existing = self
-                .base_ctx
-                .existing_membership
-                .get(baseif)
-                .cloned()
-                .unwrap_or_default();
+            let existing = self.base_ctx.vlans_for(baseif).cloned().unwrap_or_default();
 
             validate_not_bundled_interface(baseif, change, self.base_ctx, self.change_spec)?;
             validate_vlan_removals(baseif, change, &existing)?;
@@ -43,8 +43,12 @@ impl<'a> ChangePlanner<'a> {
             let base_desc = change
                 .description
                 .as_ref()
-                .or_else(|| self.base_ctx.base_descriptions.get(baseif))
-                .cloned();
+                .map(|d| d.value.clone())
+                .or_else(|| {
+                    self.base_ctx
+                        .description_for(baseif)
+                        .map(|desc| desc.to_string())
+                });
 
             let has_description = base_desc.is_some();
             validate_interface_description(baseif, has_description, self.change_spec)?;
@@ -57,7 +61,7 @@ impl<'a> ChangePlanner<'a> {
 
                 plan.vlan_changes
                     .entry(*vlan)
-                    .or_insert_with(|| VlanChange::new(*vlan, self.change_spec, self.base_ctx))
+                    .or_insert_with(|| VlanChange::new(*vlan, self.change_spec))
                     .record_removal(iface);
             }
 
@@ -80,7 +84,7 @@ impl<'a> ChangePlanner<'a> {
 
                 plan.vlan_changes
                     .entry(*vlan)
-                    .or_insert_with(|| VlanChange::new(*vlan, self.change_spec, self.base_ctx))
+                    .or_insert_with(|| VlanChange::new(*vlan, self.change_spec))
                     .record_addition(baseif.clone(), *vlan);
             }
         }
@@ -88,7 +92,7 @@ impl<'a> ChangePlanner<'a> {
         for vlan in &self.change_spec.bvi_additions {
             plan.vlan_changes
                 .entry(*vlan)
-                .or_insert_with(|| VlanChange::new(*vlan, self.change_spec, self.base_ctx))
+                .or_insert_with(|| VlanChange::new(*vlan, self.change_spec))
                 .add_bvi = true;
         }
 
@@ -96,16 +100,16 @@ impl<'a> ChangePlanner<'a> {
     }
 }
 
+/// Build a subinterface description by combining VLAN and base interface descriptions.
 pub fn build_subinterface_description(
-    vlan: u32,
+    vlan: VlanId,
     base_desc: &str,
     change_spec: &ChangeSpec,
     base_ctx: &BaseContext,
 ) -> String {
     let vlan_desc = change_spec
-        .vlans
-        .get(&vlan)
-        .and_then(|v| v.as_deref())
+        .vlan_name(&vlan)
+        .map(|v| v.value.as_str())
         .or_else(|| {
             base_ctx
                 .domain_descriptions

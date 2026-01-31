@@ -4,4 +4,4 @@ pub mod node;
 pub mod span;
 
 pub use node::{SpannedNode, SpannedNodeBlock, SpannedNodeStmt};
-pub use span::Span;
+pub use span::{Span, Spanned};

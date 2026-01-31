@@ -3,12 +3,13 @@
 //! This module parses simplified change input syntax and converts it into
 //! a structured ChangeSpec intermediate representation.
 
-use crate::ast::{Span, SpannedNode, SpannedNodeBlock};
-use crate::change::model::{ChangeSpec, InterfaceChange};
+use crate::ast::{Span, Spanned, SpannedNode, SpannedNodeBlock, SpannedNodeStmt};
+use crate::change::model::{BaseIf, ChangeSpec, InterfaceChange, VlanId};
 use crate::error::{Diagnostic, ErrorKind};
 use crate::parse::parser::tokenize_spanned;
 use crate::regex;
 
+/// Parse simplified change input text into a `ChangeSpec` structure.
 pub fn parse_change_input(input: &str) -> Result<ChangeSpec, Diagnostic> {
     let normalized_input = normalize_indent(input);
     let nodes = tokenize_spanned(&normalized_input);
@@ -25,6 +26,7 @@ pub fn parse_change_input(input: &str) -> Result<ChangeSpec, Diagnostic> {
     Ok(spec)
 }
 
+/// Process a parsed block node and update the change spec.
 fn handle_block(block: SpannedNodeBlock, spec: &mut ChangeSpec) -> Result<(), Diagnostic> {
     if block.name == "vlan database" {
         parse_vlan_block(&block, spec)?;
@@ -32,13 +34,15 @@ fn handle_block(block: SpannedNodeBlock, spec: &mut ChangeSpec) -> Result<(), Di
     }
 
     if let Some(ifname) = block.name.strip_prefix("interface ") {
-        spec.interface_spans.insert(ifname.to_string(), block.span);
-        parse_interface_block(ifname, &block, spec)?;
+        let baseif = BaseIf::from(ifname);
+        spec.interface_spans.insert(baseif.clone(), block.span);
+        parse_interface_block(&baseif, &block, spec)?;
     }
 
     Ok(())
 }
 
+/// Process a standalone statement node and update the change spec.
 fn handle_stmt(stmt: crate::ast::SpannedNodeStmt, spec: &mut ChangeSpec) -> Result<(), Diagnostic> {
     let text = stmt.stmt.trim();
     if text.is_empty() {
@@ -46,16 +50,17 @@ fn handle_stmt(stmt: crate::ast::SpannedNodeStmt, spec: &mut ChangeSpec) -> Resu
     }
 
     if text.starts_with("vlan ") {
-        parse_vlan_line(text, Some(stmt.span))?.map(|(vlan, name)| {
+        parse_vlan_line(text, stmt.span)?.map(|(vlan, name)| {
             spec.vlans.insert(vlan, name);
         });
         return Ok(());
     }
 
     if let Some(ifname) = text.strip_prefix("interface ") {
-        spec.interface_spans.insert(ifname.to_string(), stmt.span);
-        if ifname.starts_with("BVI") {
-            parse_interface_stmt(ifname, spec)?;
+        let baseif = BaseIf::from(ifname);
+        spec.interface_spans.insert(baseif.clone(), stmt.span);
+        if baseif.as_str().starts_with("BVI") {
+            parse_interface_stmt(&baseif, spec)?;
         } else {
             let mut diag = Diagnostic::new(ErrorKind::InterfaceRequiresStatements {
                 interface: ifname.to_string(),
@@ -68,23 +73,25 @@ fn handle_stmt(stmt: crate::ast::SpannedNodeStmt, spec: &mut ChangeSpec) -> Resu
     Ok(())
 }
 
+/// Parse a `vlan database` block, capturing VLAN names when present.
 fn parse_vlan_block(block: &SpannedNodeBlock, spec: &mut ChangeSpec) -> Result<(), Diagnostic> {
     for stmt in block.stmts().filter_map(|s| s.as_stmt()) {
-        if let Some((vlan, name)) = parse_vlan_line(&stmt.stmt, Some(stmt.span))? {
+        if let Some((vlan, name)) = parse_vlan_line(&stmt.stmt, stmt.span)? {
             spec.vlans.insert(vlan, name);
         }
     }
     Ok(())
 }
 
+/// Parse an interface block and populate interface-specific changes.
 fn parse_interface_block(
-    ifname: &str,
+    ifname: &BaseIf,
     block: &SpannedNodeBlock,
     spec: &mut ChangeSpec,
 ) -> Result<(), Diagnostic> {
     parse_interface_stmt(ifname, spec)?;
 
-    if ifname.starts_with("BVI") {
+    if ifname.as_str().starts_with("BVI") {
         parse_bvi_block(ifname, block, spec)?;
         return Ok(());
     }
@@ -106,10 +113,11 @@ fn parse_interface_block(
                 .map(|m| m.as_str().trim().to_string())
                 .unwrap_or_default();
             if !desc.is_empty() {
-                interface_change.description = Some(desc.clone());
-                interface_change
-                    .other_statements
-                    .push(format!("description {}", desc));
+                interface_change.description = Some(Spanned::new(desc.clone(), stmt.span));
+                interface_change.other_statements.push(SpannedNodeStmt {
+                    stmt: format!("description {}", desc),
+                    span: stmt.span,
+                });
             }
             has_supported_stmt = true;
             continue;
@@ -153,9 +161,10 @@ fn parse_interface_block(
         }
 
         if !stmt_text.starts_with("switchport") {
-            interface_change
-                .other_statements
-                .push(stmt_text.to_string());
+            interface_change.other_statements.push(SpannedNodeStmt {
+                stmt: stmt_text.to_string(),
+                span: stmt.span,
+            });
             has_supported_stmt = true;
         }
     }
@@ -169,17 +178,18 @@ fn parse_interface_block(
     }
 
     spec.interface_changes
-        .insert(ifname.to_string(), interface_change);
+        .insert(ifname.clone(), interface_change);
 
     Ok(())
 }
 
+/// Parse statements under a BVI interface block.
 fn parse_bvi_block(
-    ifname: &str,
+    ifname: &BaseIf,
     block: &SpannedNodeBlock,
     spec: &mut ChangeSpec,
 ) -> Result<(), Diagnostic> {
-    if let Some(vlan) = ifname.strip_prefix("BVI") {
+    if let Some(vlan) = ifname.as_str().strip_prefix("BVI") {
         let vlan_id = vlan.parse::<u32>().map_err(|_| {
             Diagnostic::new(ErrorKind::InvalidBviNumber {
                 text: vlan.to_string(),
@@ -190,33 +200,35 @@ fn parse_bvi_block(
         for stmt in block.stmts().filter_map(|s| s.as_stmt()) {
             let stmt_text = stmt.stmt.trim_end();
             if !stmt_text.is_empty() {
-                statements.push(stmt_text.to_string());
+                statements.push(Spanned::new(stmt_text.to_string(), stmt.span));
             }
         }
 
-        spec.bvi_statements.insert(vlan_id, statements);
+        spec.bvi_statements.insert(VlanId::new(vlan_id), statements);
     }
 
     Ok(())
 }
 
-fn parse_interface_stmt(ifname: &str, spec: &mut ChangeSpec) -> Result<(), Diagnostic> {
-    if let Some(vlan) = ifname.strip_prefix("BVI") {
+/// Handle an interface declaration that is not part of a block (e.g., BVI lines).
+fn parse_interface_stmt(ifname: &BaseIf, spec: &mut ChangeSpec) -> Result<(), Diagnostic> {
+    if let Some(vlan) = ifname.as_str().strip_prefix("BVI") {
         let vlan_id = vlan.parse::<u32>().map_err(|_| {
             Diagnostic::new(ErrorKind::InvalidBviNumber {
                 text: vlan.to_string(),
             })
         })?;
-        spec.bvi_additions.insert(vlan_id);
+        spec.bvi_additions.insert(VlanId::new(vlan_id));
     }
 
     Ok(())
 }
 
+/// Parse a single `vlan` statement, returning the VLAN ID and optional name.
 fn parse_vlan_line(
     line: &str,
-    span: Option<Span>,
-) -> Result<Option<(u32, Option<String>)>, Diagnostic> {
+    span: Span,
+) -> Result<Option<(VlanId, Option<Spanned<String>>)>, Diagnostic> {
     if !line.starts_with("vlan ") {
         return Ok(None);
     }
@@ -236,25 +248,22 @@ fn parse_vlan_line(
             .unwrap_or_default();
         if name.is_empty() {
             let mut diag = Diagnostic::new(ErrorKind::VlanNameRequired { vlan: Some(vlan) });
-            if let Some(span) = span {
-                diag.span = Some(span);
-            }
+            diag.span = Some(span);
             return Err(diag);
         }
-        return Ok(Some((vlan, Some(name))));
+        return Ok(Some((VlanId::new(vlan), Some(Spanned::new(name, span)))));
     }
 
     if regex!(r"^vlan\s+\d+\s*$").captures(line).is_some() {
         let mut diag = Diagnostic::new(ErrorKind::VlanNameRequired { vlan: None });
-        if let Some(span) = span {
-            diag.span = Some(span);
-        }
+        diag.span = Some(span);
         return Err(diag);
     }
 
     Ok(None)
 }
 
+/// Apply trunk add/remove actions to an interface change.
 fn apply_trunk_action(
     change: &mut InterfaceChange,
     action: &str,
@@ -284,7 +293,8 @@ fn apply_trunk_action(
     Ok(())
 }
 
-fn parse_vlan_list(list: &str) -> Result<Vec<u32>, Diagnostic> {
+/// Parse a whitespace-separated VLAN list (supports ranges like `300-305`).
+fn parse_vlan_list(list: &str) -> Result<Vec<VlanId>, Diagnostic> {
     if list.trim().is_empty() {
         return Err(Diagnostic::new(ErrorKind::VlanListEmpty));
     }
@@ -320,7 +330,7 @@ fn parse_vlan_list(list: &str) -> Result<Vec<u32>, Diagnostic> {
             }
 
             for vlan in start..=end {
-                vlans.push(vlan);
+                vlans.push(VlanId::new(vlan));
             }
         } else {
             // 単一のVLAN番号
@@ -329,14 +339,14 @@ fn parse_vlan_list(list: &str) -> Result<Vec<u32>, Diagnostic> {
                     text: token.to_string(),
                 })
             })?;
-            vlans.push(vlan);
+            vlans.push(VlanId::new(vlan));
         }
     }
 
     Ok(vlans)
 }
 
-
+/// Normalize indentation so parsing is independent of leading spaces.
 fn normalize_indent(input: &str) -> String {
     let lines: Vec<&str> = input.lines().collect();
     let min_indent = lines
@@ -363,6 +373,7 @@ fn normalize_indent(input: &str) -> String {
         .join("\n")
 }
 
+/// Count leading space characters on a line.
 fn count_leading_spaces(text: &str) -> usize {
     text.chars().take_while(|&c| c == ' ').count()
 }

@@ -6,11 +6,14 @@ pub mod parser;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NodeBlock {
+    /// Header text of the block (e.g., `interface TenGigE0/0/0/0`).
     pub name: String,
+    /// Child nodes inside the block.
     pub stmts: Vec<Node>,
 }
 
 impl NodeBlock {
+    /// Iterate over child nodes.
     pub fn stmts(&self) -> impl Iterator<Item = &Node> {
         self.stmts.iter()
     }
@@ -18,10 +21,12 @@ impl NodeBlock {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NodeStmt {
+    /// Raw statement text.
     pub stmt: String,
 }
 
 impl NodeStmt {
+    /// Return the statement text as a `&str`.
     pub fn stmt(&self) -> &str {
         &self.stmt
     }
@@ -35,6 +40,7 @@ pub enum Node {
 }
 
 impl Node {
+    /// Interpret the node as a block when applicable.
     pub fn as_block(&self) -> Option<&NodeBlock> {
         match self {
             Node::Block(b) => Some(b),
@@ -42,6 +48,7 @@ impl Node {
         }
     }
 
+    /// Interpret the node as a statement when applicable.
     pub fn as_stmt(&self) -> Option<&NodeStmt> {
         match self {
             Node::Stmt(s) => Some(s),

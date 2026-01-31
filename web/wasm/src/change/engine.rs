@@ -6,9 +6,11 @@ use crate::error::Diagnostic;
 use crate::parse::tokenize;
 use crate::semantics::analyze;
 
+/// High-level entry point for generating IOS XR change commands.
 pub struct ChangeEngine;
 
 impl ChangeEngine {
+    /// Generate CLI commands from base configuration text and simplified change input.
     pub fn generate(base_config: &str, change_input: &str) -> Result<String, Diagnostic> {
         let base_nodes = tokenize(base_config);
         let analysis = analyze(&base_nodes);

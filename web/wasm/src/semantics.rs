@@ -4,6 +4,7 @@ use crate::simplified_config::{build_simplified_config, SimplifiedConfigData};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use wasm_bindgen::prelude::*;
 
+/// Split an interface name into base and optional subinterface number (e.g., "Gig0/0/0/0.100").
 pub(crate) fn split_subinterface_id(name: &str) -> Result<(String, Option<u32>), String> {
     let caps = regex!(r"^([^.]+)\.(\d+)?$")
         .captures(name)
@@ -15,8 +16,7 @@ pub(crate) fn split_subinterface_id(name: &str) -> Result<(String, Option<u32>),
     Ok((baseif, subif))
 }
 
-/// Extract speed type and port number from interface name
-/// e.g., "FortyGigE0/0/0/1" -> Some(("FortyGigE", "0/0/0/1"))
+/// Extract speed type and port number from interface name (e.g., `FortyGigE0/0/0/1`).
 pub(crate) fn parse_interface_name(name: &str) -> Option<(String, String)> {
     let caps = regex!(r"^(FortyGigE|HundredGigE|TenGigE|GigabitEthernet)(.+)$").captures(name)?;
     let speed_type = caps.get(1)?.as_str().to_string();
@@ -33,15 +33,21 @@ fn find_bundle_id(stmts: &[String]) -> Option<u32> {
     })
 }
 
+/// Parsed L2 transport subinterface configuration.
 #[derive(Debug, Clone)]
 pub struct L2TransportConfig {
+    /// Base interface name (without subinterface suffix).
     pub baseif: String,
+    /// Subinterface number parsed from the name.
     pub sub_if_num: u32,
+    /// Encapsulation dot1q tag when present.
     pub encap: Option<u32>,
+    /// Whether `rewrite ingress tag pop 1 symmetric` is configured.
     pub has_rewrite: bool,
 }
 
 impl L2TransportConfig {
+    /// Attempt to parse an `interface <base>.<sub> l2transport` block into a config struct.
     pub fn try_new(node: &Node) -> Option<Self> {
         let node_block = node.as_block()?;
 
@@ -63,6 +69,7 @@ impl L2TransportConfig {
         })
     }
 
+    /// Find the encapsulation VLAN tag within a subinterface block.
     fn find_encap(n: &NodeBlock) -> Option<u32> {
         n.stmts().filter_map(|x| x.as_stmt()).find_map(|stmt| {
             let caps = regex!(r"^encapsulation dot1q (\d+)$").captures(stmt.stmt())?;
@@ -71,6 +78,7 @@ impl L2TransportConfig {
         })
     }
 
+    /// Validate encapsulation and rewrite statements for the subinterface.
     pub fn lint(&self) -> Vec<String> {
         let mut ret = Vec::new();
 
@@ -86,16 +94,21 @@ impl L2TransportConfig {
     }
 }
 
+/// Parsed bridge-domain including VLAN information and member interfaces.
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Debug, Clone)]
 pub struct BridgeDomain {
+    /// VLAN tag extracted from the bridge-domain name.
     #[wasm_bindgen(js_name = vlanTag)]
     pub vlan_tag: u32,
+    /// Interfaces assigned to this bridge-domain (including BVIs and subinterfaces).
     pub interfaces: Vec<String>,
+    /// Optional description configured on the bridge-domain.
     description: Option<String>,
 }
 
 impl BridgeDomain {
+    /// Attempt to parse a `bridge-domain VLAN<id>` block into a `BridgeDomain`.
     pub fn try_new(block: &Node) -> Option<Self> {
         let node_block = block.as_block()?;
 
@@ -123,6 +136,7 @@ impl BridgeDomain {
         })
     }
 
+    /// Extract the bridge-domain description if present.
     fn find_description(node_block: &NodeBlock) -> Option<String> {
         node_block
             .stmts()
@@ -131,10 +145,12 @@ impl BridgeDomain {
             .map(|desc| desc.trim().to_string())
     }
 
+    /// Borrow the description text, if configured.
     pub fn description(&self) -> Option<&str> {
         self.description.as_deref()
     }
 
+    /// Validate BVI and subinterface numbering relative to the bridge-domain VLAN ID.
     pub fn lint(&self) -> Vec<String> {
         self.interfaces
             .iter()
@@ -267,22 +283,28 @@ fn build_lint_output(
     msg
 }
 
+/// Aggregated analysis results for an IOS XR configuration.
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Debug, Clone)]
 pub struct Config {
+    /// Bridge-domains discovered during analysis.
     pub domains: Vec<BridgeDomain>,
+    /// Formatted lint warnings and errors.
     #[wasm_bindgen(js_name = lintOutput)]
     pub lint_output: String,
+    /// Simplified Cisco-like configuration text derived from the base config.
     #[wasm_bindgen(js_name = simplifiedConfig)]
     pub simplified_config: String,
 }
 
 impl Config {
+    /// Return the formatted lint output collected during analysis.
     pub fn lint(&self) -> String {
         self.lint_output.clone()
     }
 }
 
+/// Analyze parsed nodes to produce lint output, bridge-domains, and simplified config.
 pub fn analyze(config: &[Node]) -> Config {
     let l2transport = get_l2_transports(config);
     let domains = get_bridge_domains(config).unwrap_or_default();

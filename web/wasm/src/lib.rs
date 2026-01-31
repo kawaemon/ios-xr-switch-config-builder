@@ -14,35 +14,43 @@ use change::ChangeEngine;
 pub use parse::tokenize;
 pub use semantics::{analyze, Config};
 
+/// Statement node exposed to JS/WASM callers.
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Clone)]
 pub struct NodeStmt {
+    /// Raw configuration line for this statement.
     pub stmt: String,
 }
 
 #[wasm_bindgen]
 impl NodeStmt {
+    /// Create a new statement node from raw text.
     #[wasm_bindgen(constructor)]
     pub fn new(stmt: String) -> Self {
         Self { stmt }
     }
 }
 
+/// Block node exposed to JS/WASM callers.
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Clone)]
 pub struct NodeBlock {
+    /// Block name taken from the configuration header line.
     pub name: String,
+    /// Child statements or nested blocks inside this block.
     pub stmts: Vec<Node>,
 }
 
 #[wasm_bindgen]
 impl NodeBlock {
+    /// Create a new block node with a name and child nodes.
     #[wasm_bindgen(constructor)]
     pub fn new(name: String, stmts: Vec<Node>) -> Self {
         Self { name, stmts }
     }
 }
 
+/// Wrapper enum for either a block or statement node.
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct Node {
@@ -57,6 +65,7 @@ enum NodeInner {
 
 #[wasm_bindgen]
 impl Node {
+    /// Return the node type discriminator (`"block"` or `"stmt"`).
     #[wasm_bindgen(getter, js_name = type)]
     pub fn node_type(&self) -> String {
         match &self.inner {
@@ -65,6 +74,7 @@ impl Node {
         }
     }
 
+    /// Convert the node to a `NodeBlock` when it represents a block.
     #[wasm_bindgen(getter, js_name = asBlock)]
     pub fn as_block(&self) -> Option<NodeBlock> {
         match &self.inner {
@@ -76,6 +86,7 @@ impl Node {
         }
     }
 
+    /// Convert the node to a `NodeStmt` when it represents a statement.
     #[wasm_bindgen(getter, js_name = asStmt)]
     pub fn as_stmt(&self) -> Option<NodeStmt> {
         match &self.inner {
@@ -103,17 +114,20 @@ fn convert_node_to_wasm(node: &ParsedNode) -> Node {
     }
 }
 
+/// Return the version string for the compiled WASM bundle.
 #[wasm_bindgen]
 pub fn wasm_version() -> String {
     "ncs-wasm 0.1.0".to_string()
 }
 
+/// Parse and analyze a base IOS XR configuration.
 #[wasm_bindgen]
 pub fn analyze_config(config_text: String) -> Result<Config, String> {
     let nodes = tokenize(&config_text);
     Ok(analyze(&nodes))
 }
 
+/// Lint a configuration and return formatted warnings or errors.
 #[wasm_bindgen]
 pub fn lint_config(config_text: String) -> Result<String, String> {
     let nodes = tokenize(&config_text);
@@ -121,26 +135,29 @@ pub fn lint_config(config_text: String) -> Result<String, String> {
     Ok(config.lint())
 }
 
+/// Parse configuration text into a list of AST nodes.
 #[wasm_bindgen]
 pub fn parse_config(config_text: String) -> Result<Vec<Node>, String> {
     let nodes = tokenize(&config_text);
     Ok(nodes.iter().map(convert_node_to_wasm).collect())
 }
 
+/// Generated IOS XR CLI commands representing a requested change.
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Clone)]
 pub struct GeneratedChange {
+    /// CLI change commands ready to be applied.
     #[wasm_bindgen(js_name = changeOutput)]
     pub change_output: String,
 }
 
+/// Build change commands from the base config and a simplified desired diff.
 #[wasm_bindgen]
 pub fn generate_change_config(
     base_config: String,
     change_input: String,
 ) -> Result<GeneratedChange, String> {
-    let change_output = ChangeEngine::generate(&base_config, &change_input).map_err(|diag| diag.format())?;
-    Ok(GeneratedChange {
-        change_output,
-    })
+    let change_output =
+        ChangeEngine::generate(&base_config, &change_input).map_err(|diag| diag.format())?;
+    Ok(GeneratedChange { change_output })
 }

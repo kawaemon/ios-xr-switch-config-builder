@@ -13,7 +13,7 @@ pub fn generate_commands(plan: &ChangePlan, change_spec: &ChangeSpec) -> String 
         if !change.other_statements.is_empty() {
             lines.push(format!("interface {}", baseif));
             for stmt in &change.other_statements {
-                lines.push(format!("  {}", stmt));
+                lines.push(format!("  {}", stmt.stmt));
             }
             lines.push("exit".to_string());
             lines.push(String::new());
@@ -25,7 +25,7 @@ pub fn generate_commands(plan: &ChangePlan, change_spec: &ChangeSpec) -> String 
         if !statements.is_empty() {
             lines.push(format!("interface BVI{}", vlan));
             for stmt in statements {
-                lines.push(format!("  {}", stmt));
+                lines.push(format!("  {}", &stmt.value));
             }
             lines.push("exit".to_string());
             lines.push(String::new());
@@ -57,8 +57,8 @@ pub fn generate_commands(plan: &ChangePlan, change_spec: &ChangeSpec) -> String 
             // Only output description if explicitly specified in change_spec
             if change_spec.vlans.contains_key(&change.vlan) {
                 if let Some(desc) = &change.description {
-                    if !desc.is_empty() {
-                        lines.push(format!("      description {}", desc));
+                    if !desc.value.is_empty() {
+                        lines.push(format!("      description {}", &desc.value));
                     }
                 }
             }

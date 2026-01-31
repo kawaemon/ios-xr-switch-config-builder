@@ -7,15 +7,18 @@ mod imp {
     use js_sys::{Array, RegExp as JsRegExp};
     use wasm_bindgen::JsCast;
 
+    /// Lightweight wrapper around JavaScript `RegExp` used in WASM.
     pub struct Regex {
         pattern: &'static str,
     }
 
     impl Regex {
+        /// Create a new regex from a static pattern.
         pub const fn new(pattern: &'static str) -> Self {
             Self { pattern }
         }
 
+        /// Execute the regex against the given text and return captures.
         pub fn captures(&self, text: &str) -> Option<Captures> {
             let re = JsRegExp::new(self.pattern, "");
             let result = re.exec(text)?;
@@ -35,11 +38,13 @@ mod imp {
         }
     }
 
+    /// Collection of captured groups from a regex match.
     pub struct Captures {
         groups: Vec<Option<String>>,
     }
 
     impl Captures {
+        /// Get a specific capture group.
         pub fn get(&self, index: usize) -> Option<Match> {
             self.groups
                 .get(index)?
@@ -48,11 +53,13 @@ mod imp {
         }
     }
 
+    /// Single capture group match.
     pub struct Match {
         text: String,
     }
 
     impl Match {
+        /// Borrow the matched text.
         pub fn as_str(&self) -> &str {
             &self.text
         }
@@ -65,16 +72,19 @@ mod imp {
 mod imp {
     use regex::Regex as HostRegex;
 
+    /// Host-side regex wrapper used when not targeting WASM.
     pub struct Regex {
         inner: HostRegex,
     }
 
     impl Regex {
+        /// Create a compiled regex from a static pattern.
         pub fn new(pattern: &'static str) -> Self {
             let inner = HostRegex::new(pattern).expect("regex pattern must compile");
             Self { inner }
         }
 
+        /// Execute the regex and return captures.
         pub fn captures(&self, text: &str) -> Option<Captures> {
             self.inner.captures(text).map(|caps| Captures {
                 groups: caps
@@ -85,11 +95,13 @@ mod imp {
         }
     }
 
+    /// Collection of captured groups from a regex match.
     pub struct Captures {
         groups: Vec<Option<String>>,
     }
 
     impl Captures {
+        /// Get a specific capture group.
         pub fn get(&self, index: usize) -> Option<Match> {
             self.groups
                 .get(index)?
@@ -98,11 +110,13 @@ mod imp {
         }
     }
 
+    /// Single capture group match.
     pub struct Match {
         text: String,
     }
 
     impl Match {
+        /// Borrow the matched text.
         pub fn as_str(&self) -> &str {
             &self.text
         }

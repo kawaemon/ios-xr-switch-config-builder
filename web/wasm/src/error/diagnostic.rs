@@ -74,7 +74,10 @@ impl ErrorKind {
             ErrorKind::InvalidBviNumber { text } => {
                 format!("invalid BVI number: {}", text)
             }
-            ErrorKind::BundledInterfaceCannotConfigureVlans { interface, bundle_id } => {
+            ErrorKind::BundledInterfaceCannotConfigureVlans {
+                interface,
+                bundle_id,
+            } => {
                 format!(
                     "interface {} is part of bundle {} and cannot configure VLANs directly. Configure VLANs on Bundle-Ether{} instead",
                     interface, bundle_id, bundle_id
@@ -95,15 +98,19 @@ impl ErrorKind {
 /// A diagnostic message with optional span information
 #[derive(Debug, Clone)]
 pub struct Diagnostic {
+    /// Specific error kind describing the issue.
     pub kind: ErrorKind,
+    /// Optional source span for the error.
     pub span: Option<Span>,
 }
 
 impl Diagnostic {
+    /// Construct a diagnostic without span information.
     pub fn new(kind: ErrorKind) -> Self {
         Diagnostic { kind, span: None }
     }
 
+    /// Construct a diagnostic with an associated source span.
     pub fn with_span(kind: ErrorKind, span: Span) -> Self {
         Diagnostic {
             kind,

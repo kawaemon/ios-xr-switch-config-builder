@@ -4,14 +4,15 @@
 //! ensuring that requested changes are valid (e.g., VLANs exist before removal).
 
 use crate::ast::Span;
-use crate::change::model::{BaseContext, ChangeSpec, InterfaceChange};
+use crate::change::model::{BaseContext, BaseIf, ChangeSpec, InterfaceChange, VlanId};
 use crate::error::{Diagnostic, ErrorKind};
 use std::collections::BTreeSet;
 
+/// Compute the desired VLAN set for an interface after applying add/remove actions.
 pub fn desired_vlans(
     change: &InterfaceChange,
-    existing: &BTreeSet<u32>,
-) -> Result<BTreeSet<u32>, Diagnostic> {
+    existing: &BTreeSet<VlanId>,
+) -> Result<BTreeSet<VlanId>, Diagnostic> {
     let mut result = existing.clone();
     for vlan in change.trunk_add.keys() {
         result.insert(*vlan);
@@ -22,16 +23,17 @@ pub fn desired_vlans(
     Ok(result)
 }
 
+/// Ensure VLAN removals reference VLANs that exist on the base interface.
 pub fn validate_vlan_removals(
-    baseif: &str,
+    baseif: &BaseIf,
     change: &InterfaceChange,
-    existing: &BTreeSet<u32>,
+    existing: &BTreeSet<VlanId>,
 ) -> Result<(), Diagnostic> {
     for (vlan, span) in &change.trunk_remove {
         if !existing.contains(vlan) {
             return Err(Diagnostic::with_span(
                 ErrorKind::VlanNotPresent {
-                    vlan: *vlan,
+                    vlan: vlan.get(),
                     interface: baseif.to_string(),
                 },
                 *span,
@@ -41,8 +43,9 @@ pub fn validate_vlan_removals(
     Ok(())
 }
 
+/// Validate that an interface has a description in either base or change input.
 pub fn validate_interface_description(
-    baseif: &str,
+    baseif: &BaseIf,
     has_description: bool,
     change_spec: &ChangeSpec,
 ) -> Result<(), Diagnostic> {
@@ -58,8 +61,9 @@ pub fn validate_interface_description(
     Ok(())
 }
 
+/// Check that a VLAN being added is defined in the change input or base config.
 pub fn validate_vlan_addition(
-    vlan: u32,
+    vlan: VlanId,
     change_spec: &ChangeSpec,
     base_ctx: &BaseContext,
     span: Span,
@@ -69,7 +73,7 @@ pub fn validate_vlan_addition(
 
     if !vlan_defined_in_change && !vlan_exists_in_base {
         return Err(Diagnostic::with_span(
-            ErrorKind::VlanNotDefinedInDatabase { vlan },
+            ErrorKind::VlanNotDefinedInDatabase { vlan: vlan.get() },
             span,
         ));
     }
@@ -77,13 +81,14 @@ pub fn validate_vlan_addition(
     Ok(())
 }
 
+/// Ensure VLAN changes are not attempted on member interfaces of a bundle.
 pub fn validate_not_bundled_interface(
-    baseif: &str,
+    baseif: &BaseIf,
     change: &InterfaceChange,
     base_ctx: &BaseContext,
     change_spec: &ChangeSpec,
 ) -> Result<(), Diagnostic> {
-    if let Some(&bundle_id) = base_ctx.bundled_interfaces.get(baseif) {
+    if let Some(bundle_id) = base_ctx.bundle_id(baseif) {
         // If interface is bundled, it should not have VLAN add/remove operations
         if !change.trunk_add.is_empty() || !change.trunk_remove.is_empty() {
             // Get the span from the first VLAN operation
