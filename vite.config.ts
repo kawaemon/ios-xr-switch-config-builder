@@ -15,4 +15,7 @@ plugins.push(react(), wasm(), topLevelAwait());
 // https://vite.dev/config/
 export default defineConfig({
   plugins,
+  build: {
+    assetsDir: "",
+  },
 });
