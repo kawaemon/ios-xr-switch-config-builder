@@ -14,8 +14,10 @@ plugins.push(react(), wasm(), topLevelAwait());
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: "/ios-xr-switch-config-builder/",
   plugins,
   build: {
+    // Keep assets at dist/ instead of dist/assets
     assetsDir: "",
   },
 });
