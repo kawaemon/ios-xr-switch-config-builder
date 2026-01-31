@@ -20,6 +20,11 @@ const changeCommandCompletions: Completion[] = [
     detail: "100G ポートの設定",
   },
   {
+    label: "interface Bundle-Ether",
+    type: "variable",
+    detail: "LAG ポートの設定",
+  },
+  {
     label: "interface BVI",
     type: "variable",
     detail: "BVI の作成",
@@ -57,15 +62,39 @@ const changeCommandCompletions: Completion[] = [
 ];
 
 const changeCommandCompletionSource: CompletionSource = (context) => {
-  const word = context.matchBefore(/[-A-Za-z0-9/._\t ]*$/);
+  const word = context.matchBefore(/\S*$/);
   if (word?.text === "" && !context.explicit) {
     return null;
   }
 
+  const line = context.state.doc.lineAt(context.pos);
+  const lineText = line.text.trimStart();
+
+  const filteredOptions = changeCommandCompletions.filter((opt) => {
+    const optLabel = opt.label;
+
+    // 行が空の場合、すべての候補を表示
+    if (lineText.trim() === "") {
+      return true;
+    }
+
+    // 候補が行のテキストで始まっている場合のみ表示
+    if (!optLabel.startsWith(lineText)) {
+      return false;
+    }
+
+    // 完全一致の場合は除外
+    if (lineText.trim() === optLabel.trim()) {
+      return false;
+    }
+
+    return true;
+  });
+
   return {
     from: word ? word.from : context.pos,
-    options: changeCommandCompletions,
-    validFor: /^[-A-Za-z0-9/._\t ]*$/,
+    options: filteredOptions,
+    validFor: /^\S*$/,
   };
 };
 

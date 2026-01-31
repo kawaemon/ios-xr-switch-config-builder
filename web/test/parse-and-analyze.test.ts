@@ -66,7 +66,6 @@ l2vpn
       "interface FortyGigE0/0/0/46",
       "  description To:server1",
       "  bundle id 1 mode active",
-      "  switchport mode trunk",
       "  switchport trunk allowed vlan add 300",
       "",
       "vlan database",
@@ -102,7 +101,6 @@ l2vpn
     [
       "interface Bundle-Ether100",
       "  description uplink-bundle",
-      "  switchport mode trunk",
       "  switchport trunk allowed vlan add 300",
       "",
       "interface FortyGigE0/0/0/46",

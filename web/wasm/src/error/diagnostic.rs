@@ -5,20 +5,22 @@ use crate::ast::Span;
 pub enum ErrorKind {
     // VLAN-related errors
     VlanNotPresent { vlan: u32, interface: String },
+    VlanNotDefinedInDatabase { vlan: u32 },
     VlanNameRequired { vlan: Option<u32> },
     InvalidVlanId { text: String },
     InvalidVlanNumber { text: String },
+    InvalidVlanRange { text: String },
     VlanListEmpty,
 
     // Interface-related errors
     MissingDescription { interface: String },
     InterfaceRequiresStatements { interface: String },
     InvalidBviNumber { text: String },
+    BundledInterfaceCannotConfigureVlans { interface: String, bundle_id: u32 },
 
     // Switchport mode errors
     UnsupportedSwitchportMode { mode: String },
     AccessModeNotSupported,
-    InterfaceModeConflict,
 
     // Trunk action errors
     InvalidTrunkAction { action: String },
@@ -37,6 +39,12 @@ impl ErrorKind {
                     vlan, interface
                 )
             }
+            ErrorKind::VlanNotDefinedInDatabase { vlan } => {
+                format!(
+                    "VLAN {} is not defined in vlan database or base config",
+                    vlan
+                )
+            }
             ErrorKind::VlanNameRequired { vlan } => {
                 if let Some(v) = vlan {
                     format!("VLAN {} name is required", v)
@@ -49,6 +57,9 @@ impl ErrorKind {
             }
             ErrorKind::InvalidVlanNumber { text } => {
                 format!("invalid vlan number: {}", text)
+            }
+            ErrorKind::InvalidVlanRange { text } => {
+                format!("invalid VLAN range (start must be <= end): {}", text)
             }
             ErrorKind::VlanListEmpty => "vlan list is empty".to_string(),
             ErrorKind::MissingDescription { interface } => {
@@ -63,11 +74,16 @@ impl ErrorKind {
             ErrorKind::InvalidBviNumber { text } => {
                 format!("invalid BVI number: {}", text)
             }
+            ErrorKind::BundledInterfaceCannotConfigureVlans { interface, bundle_id } => {
+                format!(
+                    "interface {} is part of bundle {} and cannot configure VLANs directly. Configure VLANs on Bundle-Ether{} instead",
+                    interface, bundle_id, bundle_id
+                )
+            }
             ErrorKind::UnsupportedSwitchportMode { mode } => {
                 format!("switchport mode {} is not supported", mode)
             }
             ErrorKind::AccessModeNotSupported => "switchport access is not supported".to_string(),
-            ErrorKind::InterfaceModeConflict => "interface mode is conflicting".to_string(),
             ErrorKind::InvalidTrunkAction { action } => {
                 format!("invalid trunk action: {}", action)
             }

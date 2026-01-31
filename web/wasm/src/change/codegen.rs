@@ -20,6 +20,18 @@ pub fn generate_commands(plan: &ChangePlan, change_spec: &ChangeSpec) -> String 
         }
     }
 
+    // Output BVI interface configuration changes
+    for (vlan, statements) in &change_spec.bvi_statements {
+        if !statements.is_empty() {
+            lines.push(format!("interface BVI{}", vlan));
+            for stmt in statements {
+                lines.push(format!("  {}", stmt));
+            }
+            lines.push("exit".to_string());
+            lines.push(String::new());
+        }
+    }
+
     if !plan.removal_cmds.is_empty() {
         lines.extend(plan.removal_cmds.clone());
         lines.push(String::new());

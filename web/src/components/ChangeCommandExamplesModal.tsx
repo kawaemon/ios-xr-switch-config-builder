@@ -5,11 +5,9 @@ type ChangeCommandExamplesModalProps = {
   onClose: () => void;
 };
 
-
 const examples = [
   {
     title: "トランクポートの設定",
-    description: "複数 VLAN を通す場合の例です。",
     lines: [
       "interface FortyGigE0/0/0/46",
       "  description To:server-1",
@@ -20,7 +18,6 @@ const examples = [
   },
   {
     title: "BVI の作成",
-    description: "L3 設定は別途投入します。",
     lines: ["interface BVI500"],
   },
   {
@@ -37,9 +34,6 @@ export function ChangeCommandExamplesModal({
   return (
     <Modal opened={opened} onClose={onClose} title="コマンド例" size="lg">
       <Stack gap="md">
-        <Text size="sm" c="dimmed">
-          変更コマンドの構文サンプルです。必要に応じて編集してください。
-        </Text>
         {examples.map((example) => (
           <Paper key={example.title} withBorder radius="md" p="md">
             <Stack gap="xs">

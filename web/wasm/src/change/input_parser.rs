@@ -4,7 +4,7 @@
 //! a structured ChangeSpec intermediate representation.
 
 use crate::ast::{Span, SpannedNode, SpannedNodeBlock};
-use crate::change::model::{ChangeSpec, InterfaceChange, InterfaceMode};
+use crate::change::model::{ChangeSpec, InterfaceChange};
 use crate::error::{Diagnostic, ErrorKind};
 use crate::parse::parser::tokenize_spanned;
 use crate::regex;
@@ -85,6 +85,7 @@ fn parse_interface_block(
     parse_interface_stmt(ifname, spec)?;
 
     if ifname.starts_with("BVI") {
+        parse_bvi_block(ifname, block, spec)?;
         return Ok(());
     }
 
@@ -115,7 +116,7 @@ fn parse_interface_block(
         }
 
         if mode_re.captures(stmt_text).is_some() {
-            update_mode(&mut interface_change, InterfaceMode::Trunk, stmt.span)?;
+            // Ignore "switchport mode trunk" - all ports are trunk by default
             has_supported_stmt = true;
             continue;
         }
@@ -145,7 +146,6 @@ fn parse_interface_block(
                 .get(2)
                 .map(|m| m.as_str().to_string())
                 .unwrap_or_default();
-            update_mode(&mut interface_change, InterfaceMode::Trunk, stmt.span)?;
 
             apply_trunk_action(&mut interface_change, &action, &list, stmt.span)?;
             has_supported_stmt = true;
@@ -170,6 +170,32 @@ fn parse_interface_block(
 
     spec.interface_changes
         .insert(ifname.to_string(), interface_change);
+
+    Ok(())
+}
+
+fn parse_bvi_block(
+    ifname: &str,
+    block: &SpannedNodeBlock,
+    spec: &mut ChangeSpec,
+) -> Result<(), Diagnostic> {
+    if let Some(vlan) = ifname.strip_prefix("BVI") {
+        let vlan_id = vlan.parse::<u32>().map_err(|_| {
+            Diagnostic::new(ErrorKind::InvalidBviNumber {
+                text: vlan.to_string(),
+            })
+        })?;
+
+        let mut statements = Vec::new();
+        for stmt in block.stmts().filter_map(|s| s.as_stmt()) {
+            let stmt_text = stmt.stmt.trim_end();
+            if !stmt_text.is_empty() {
+                statements.push(stmt_text.to_string());
+            }
+        }
+
+        spec.bvi_statements.insert(vlan_id, statements);
+    }
 
     Ok(())
 }
@@ -263,31 +289,53 @@ fn parse_vlan_list(list: &str) -> Result<Vec<u32>, Diagnostic> {
         return Err(Diagnostic::new(ErrorKind::VlanListEmpty));
     }
 
-    list.split_whitespace()
-        .map(|v| {
-            v.parse::<u32>().map_err(|_| {
-                Diagnostic::new(ErrorKind::InvalidVlanNumber {
-                    text: v.to_string(),
-                })
-            })
-        })
-        .collect()
-}
+    let mut vlans = Vec::new();
 
-fn update_mode(
-    change: &mut InterfaceChange,
-    next: InterfaceMode,
-    span: Span,
-) -> Result<(), Diagnostic> {
-    if change.mode != InterfaceMode::Unknown && change.mode != next {
-        let mut diag = Diagnostic::new(ErrorKind::InterfaceModeConflict);
-        diag.span = Some(span);
-        return Err(diag);
+    for token in list.split_whitespace() {
+        if token.contains('-') {
+            // 範囲指定: 302-308
+            let parts: Vec<&str> = token.split('-').collect();
+            if parts.len() != 2 {
+                return Err(Diagnostic::new(ErrorKind::InvalidVlanNumber {
+                    text: token.to_string(),
+                }));
+            }
+
+            let start = parts[0].parse::<u32>().map_err(|_| {
+                Diagnostic::new(ErrorKind::InvalidVlanNumber {
+                    text: token.to_string(),
+                })
+            })?;
+
+            let end = parts[1].parse::<u32>().map_err(|_| {
+                Diagnostic::new(ErrorKind::InvalidVlanNumber {
+                    text: token.to_string(),
+                })
+            })?;
+
+            if start > end {
+                return Err(Diagnostic::new(ErrorKind::InvalidVlanRange {
+                    text: token.to_string(),
+                }));
+            }
+
+            for vlan in start..=end {
+                vlans.push(vlan);
+            }
+        } else {
+            // 単一のVLAN番号
+            let vlan = token.parse::<u32>().map_err(|_| {
+                Diagnostic::new(ErrorKind::InvalidVlanNumber {
+                    text: token.to_string(),
+                })
+            })?;
+            vlans.push(vlan);
+        }
     }
 
-    change.mode = next;
-    Ok(())
+    Ok(vlans)
 }
+
 
 fn normalize_indent(input: &str) -> String {
     let lines: Vec<&str> = input.lines().collect();

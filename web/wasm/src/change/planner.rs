@@ -7,7 +7,8 @@ use crate::change::model::{
     BaseContext, ChangePlan, ChangeSpec, InterfaceCreation, VlanChange,
 };
 use crate::change::validator::{
-    desired_vlans, validate_interface_description, validate_vlan_removals,
+    desired_vlans, validate_interface_description, validate_not_bundled_interface,
+    validate_vlan_addition, validate_vlan_removals,
 };
 
 pub struct ChangePlanner<'a> {
@@ -34,6 +35,7 @@ impl<'a> ChangePlanner<'a> {
                 .cloned()
                 .unwrap_or_default();
 
+            validate_not_bundled_interface(baseif, change, self.base_ctx, self.change_spec)?;
             validate_vlan_removals(baseif, change, &existing)?;
 
             let desired = desired_vlans(change, &existing)?;
@@ -60,6 +62,11 @@ impl<'a> ChangePlanner<'a> {
             }
 
             for vlan in desired.difference(&existing) {
+                // Validate that the VLAN is defined in vlan database or exists in base config
+                if let Some(&span) = change.trunk_add.get(vlan) {
+                    validate_vlan_addition(*vlan, self.change_spec, self.base_ctx, span)?;
+                }
+
                 plan.additions.push(InterfaceCreation {
                     baseif: baseif.clone(),
                     vlan: *vlan,

@@ -88,7 +88,6 @@ pub fn build_simplified_config(data: &SimplifiedConfigData) -> String {
                     lines.push(format!("  {}", stmt));
                 }
             }
-            lines.push("  switchport mode trunk".to_string());
             lines.push(format!("  switchport trunk allowed vlan add {}", vlan_list));
             lines.push(String::new());
 
