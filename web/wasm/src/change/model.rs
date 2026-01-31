@@ -81,6 +81,8 @@ pub struct InterfaceChange {
     pub trunk_add: BTreeMap<VlanId, Span>, // vlan -> span
     /// VLANs to remove from the trunk along with their source span.
     pub trunk_remove: BTreeMap<VlanId, Span>, // vlan -> span
+    /// Whether the trunk should be cleared of all VLANs (`switchport trunk allowed vlan none`).
+    pub trunk_clear: Option<Span>,
     /// Additional statements to apply under the interface.
     pub other_statements: Vec<SpannedNodeStmt>,
 }

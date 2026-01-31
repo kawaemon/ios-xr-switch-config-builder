@@ -52,25 +52,4 @@ impl<T> Spanned<T> {
     pub fn new(value: T, span: Span) -> Self {
         Spanned { value, span }
     }
-
-    /// Transform the inner value while preserving the span.
-    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Spanned<U> {
-        Spanned {
-            value: f(self.value),
-            span: self.span,
-        }
-    }
-
-    /// Borrow the inner value while keeping the span reference.
-    pub fn as_ref(&self) -> Spanned<&T> {
-        Spanned {
-            value: &self.value,
-            span: self.span,
-        }
-    }
-
-    /// Split into owned value and span.
-    pub fn into_parts(self) -> (T, Span) {
-        (self.value, self.span)
-    }
 }

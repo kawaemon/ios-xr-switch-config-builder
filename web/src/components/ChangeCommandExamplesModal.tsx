@@ -14,6 +14,7 @@ const examples = [
       "  switchport mode trunk",
       "  switchport trunk allowed vlan add 300 350",
       "  switchport trunk allowed vlan remove 200",
+      "  switchport trunk allowed vlan none",
     ],
   },
   {

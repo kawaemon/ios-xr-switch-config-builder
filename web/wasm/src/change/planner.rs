@@ -3,12 +3,13 @@
 //! This module builds the diff plan between the base configuration context and
 //! the desired change specification.
 
+use crate::ast::Span;
 use crate::change::model::{
-    BaseContext, ChangePlan, ChangeSpec, InterfaceCreation, VlanChange, VlanId,
+    BaseContext, ChangePlan, ChangeSpec, InterfaceChange, InterfaceCreation, VlanChange, VlanId,
 };
 use crate::change::validator::{
-    desired_vlans, validate_interface_description, validate_not_bundled_interface,
-    validate_vlan_addition, validate_vlan_removals,
+    validate_interface_description, validate_not_bundled_interface, validate_vlan_addition,
+    validate_vlan_removals,
 };
 
 /// Builds a concrete change plan from desired input and the existing base context.
@@ -38,7 +39,7 @@ impl<'a> ChangePlanner<'a> {
             validate_not_bundled_interface(baseif, change, self.base_ctx, self.change_spec)?;
             validate_vlan_removals(baseif, change, &existing)?;
 
-            let desired = desired_vlans(change, &existing)?;
+            let desired = desired_vlans(change, &existing);
 
             let base_desc = change
                 .description
@@ -121,4 +122,41 @@ pub fn build_subinterface_description(
         Some(v) => format!("{},{}", v, base_desc),
         None => base_desc.to_string(),
     }
+}
+
+/// Compute the desired VLAN set for an interface after applying trunk operations.
+fn desired_vlans(
+    change: &InterfaceChange,
+    existing: &std::collections::BTreeSet<VlanId>,
+) -> std::collections::BTreeSet<VlanId> {
+    fn is_after(span: Span, pivot: Span) -> bool {
+        span.line > pivot.line || (span.line == pivot.line && span.col_start >= pivot.col_start)
+    }
+
+    if let Some(clear_span) = change.trunk_clear {
+        let mut result = std::collections::BTreeSet::new();
+
+        for (vlan, span) in &change.trunk_add {
+            if is_after(*span, clear_span) {
+                result.insert(*vlan);
+            }
+        }
+
+        for (vlan, span) in &change.trunk_remove {
+            if is_after(*span, clear_span) {
+                result.remove(vlan);
+            }
+        }
+
+        return result;
+    }
+
+    let mut result = existing.clone();
+    for vlan in change.trunk_add.keys() {
+        result.insert(*vlan);
+    }
+    for vlan in change.trunk_remove.keys() {
+        result.remove(vlan);
+    }
+    result
 }

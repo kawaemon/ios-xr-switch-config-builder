@@ -57,6 +57,8 @@ interface BVI500
 interface FortyGigE0/0/0/46
   switchport trunk allowed vlan add 301 500
   switchport trunk allowed vlan remove 300
+interface FortyGigE0/0/0/46
+  switchport trunk allowed vlan none
 interface FortyGigE0/0/0/47
   description To:eth1.server2
   switchport mode trunk

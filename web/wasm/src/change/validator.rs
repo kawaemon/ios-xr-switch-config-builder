@@ -8,21 +8,6 @@ use crate::change::model::{BaseContext, BaseIf, ChangeSpec, InterfaceChange, Vla
 use crate::error::{Diagnostic, ErrorKind};
 use std::collections::BTreeSet;
 
-/// Compute the desired VLAN set for an interface after applying add/remove actions.
-pub fn desired_vlans(
-    change: &InterfaceChange,
-    existing: &BTreeSet<VlanId>,
-) -> Result<BTreeSet<VlanId>, Diagnostic> {
-    let mut result = existing.clone();
-    for vlan in change.trunk_add.keys() {
-        result.insert(*vlan);
-    }
-    for vlan in change.trunk_remove.keys() {
-        result.remove(vlan);
-    }
-    Ok(result)
-}
-
 /// Ensure VLAN removals reference VLANs that exist on the base interface.
 pub fn validate_vlan_removals(
     baseif: &BaseIf,
@@ -90,14 +75,15 @@ pub fn validate_not_bundled_interface(
 ) -> Result<(), Diagnostic> {
     if let Some(bundle_id) = base_ctx.bundle_id(baseif) {
         // If interface is bundled, it should not have VLAN add/remove operations
-        if !change.trunk_add.is_empty() || !change.trunk_remove.is_empty() {
+        if change.trunk_clear.is_some()
+            || !change.trunk_add.is_empty()
+            || !change.trunk_remove.is_empty()
+        {
             // Get the span from the first VLAN operation
             let span = change
-                .trunk_add
-                .values()
-                .next()
-                .or_else(|| change.trunk_remove.values().next())
-                .copied()
+                .trunk_clear
+                .or_else(|| change.trunk_add.values().copied().next())
+                .or_else(|| change.trunk_remove.values().copied().next())
                 .or_else(|| change_spec.interface_span(baseif))
                 .unwrap_or_else(|| Span::line_only(1));
 

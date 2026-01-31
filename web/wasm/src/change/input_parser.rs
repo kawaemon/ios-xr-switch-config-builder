@@ -102,6 +102,7 @@ fn parse_interface_block(
     let desc_re = regex!(r"^description\s+(.+)$");
     let mode_re = regex!(r"^switchport mode\s+(trunk)$");
     let mode_any_re = regex!(r"^switchport mode\s+(.+)$");
+    let trunk_none_re = regex!(r"^switchport trunk allowed vlan none\s*$");
     let trunk_re = regex!(r"^switchport trunk allowed vlan (add|remove)\s+(.+)$");
 
     for stmt in block.stmts().filter_map(|s| s.as_stmt()) {
@@ -156,6 +157,14 @@ fn parse_interface_block(
                 .unwrap_or_default();
 
             apply_trunk_action(&mut interface_change, &action, &list, stmt.span)?;
+            has_supported_stmt = true;
+            continue;
+        }
+
+        if trunk_none_re.captures(stmt_text).is_some() {
+            if interface_change.trunk_clear.is_none() {
+                interface_change.trunk_clear = Some(stmt.span);
+            }
             has_supported_stmt = true;
             continue;
         }

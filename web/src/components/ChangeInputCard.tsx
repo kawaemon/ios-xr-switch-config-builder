@@ -50,6 +50,11 @@ const changeCommandCompletions: Completion[] = [
     detail: "トランクから VLAN を除外",
   },
   {
+    label: "switchport trunk allowed vlan none",
+    type: "keyword",
+    detail: "トランクリストを全削除",
+  },
+  {
     label: "vlan database",
     type: "keyword",
     detail: "VLAN 定義の開始",
