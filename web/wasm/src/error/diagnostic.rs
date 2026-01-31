@@ -14,7 +14,6 @@ pub enum ErrorKind {
 
     // Interface-related errors
     MissingDescription { interface: String },
-    InterfaceRequiresStatements { interface: String },
     InvalidBviNumber { text: String },
     BundledInterfaceCannotConfigureVlans { interface: String, bundle_id: u32 },
 
@@ -64,12 +63,6 @@ impl ErrorKind {
             ErrorKind::VlanListEmpty => "vlan list is empty".to_string(),
             ErrorKind::MissingDescription { interface } => {
                 format!("interface requires description: {}", interface)
-            }
-            ErrorKind::InterfaceRequiresStatements { interface } => {
-                format!(
-                    "interface block must contain supported statements: {}",
-                    interface
-                )
             }
             ErrorKind::InvalidBviNumber { text } => {
                 format!("invalid BVI number: {}", text)

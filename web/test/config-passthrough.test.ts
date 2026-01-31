@@ -29,7 +29,7 @@ l2vpn
       "  mtu 9000",
       "  bundle id 100 mode active",
       "  no shutdown",
-      "  switchport trunk allowed vlan add 500",
+      "  switchport trunk allowed vlan 500",
       "",
       "vlan database",
       "  vlan 500 name mgmt",

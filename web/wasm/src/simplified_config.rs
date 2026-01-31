@@ -96,7 +96,7 @@ pub fn build_simplified_config(data: &SimplifiedConfigData) -> String {
                     lines.push(format!("  {}", stmt));
                 }
             }
-            lines.push(format!("  switchport trunk allowed vlan add {}", vlan_list));
+            lines.push(format!("  switchport trunk allowed vlan {}", vlan_list));
             lines.push(String::new());
 
             if let Some(members) = data.bundle_members.get(&base_interface) {

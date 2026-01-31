@@ -8,6 +8,7 @@ use crate::change::model::{BaseIf, ChangeSpec, InterfaceChange, VlanId};
 use crate::error::{Diagnostic, ErrorKind};
 use crate::parse::parser::tokenize_spanned;
 use crate::regex;
+use std::collections::BTreeSet;
 
 /// Parse simplified change input text into a `ChangeSpec` structure.
 pub fn parse_change_input(input: &str) -> Result<ChangeSpec, Diagnostic> {
@@ -61,12 +62,6 @@ fn handle_stmt(stmt: crate::ast::SpannedNodeStmt, spec: &mut ChangeSpec) -> Resu
         spec.interface_spans.insert(baseif.clone(), stmt.span);
         if baseif.as_str().starts_with("BVI") {
             parse_interface_stmt(&baseif, spec)?;
-        } else {
-            let mut diag = Diagnostic::new(ErrorKind::InterfaceRequiresStatements {
-                interface: ifname.to_string(),
-            });
-            diag.span = Some(stmt.span);
-            return Err(diag);
         }
     }
 
@@ -97,12 +92,13 @@ fn parse_interface_block(
     }
 
     let mut interface_change = spec.interface_changes.remove(ifname).unwrap_or_default();
-    let mut has_supported_stmt = false;
 
     let desc_re = regex!(r"^description\s+(.+)$");
     let mode_re = regex!(r"^switchport mode\s+(trunk)$");
     let mode_any_re = regex!(r"^switchport mode\s+(.+)$");
     let trunk_none_re = regex!(r"^switchport trunk allowed vlan none\s*$");
+    let trunk_set_re =
+        regex!(r"^switchport trunk allowed vlan\s+(?!add\b)(?!remove\b)(?!none\b)(.+)$");
     let trunk_re = regex!(r"^switchport trunk allowed vlan (add|remove)\s+(.+)$");
 
     for stmt in block.stmts().filter_map(|s| s.as_stmt()) {
@@ -120,13 +116,11 @@ fn parse_interface_block(
                     span: stmt.span,
                 });
             }
-            has_supported_stmt = true;
             continue;
         }
 
         if mode_re.captures(stmt_text).is_some() {
             // Ignore "switchport mode trunk" - all ports are trunk by default
-            has_supported_stmt = true;
             continue;
         }
 
@@ -157,15 +151,22 @@ fn parse_interface_block(
                 .unwrap_or_default();
 
             apply_trunk_action(&mut interface_change, &action, &list, stmt.span)?;
-            has_supported_stmt = true;
+            continue;
+        }
+
+        if let Some(caps) = trunk_set_re.captures(stmt_text) {
+            let list = caps
+                .get(1)
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default();
+            let vlans = parse_vlan_list(&list)?;
+            let vlan_set: BTreeSet<VlanId> = vlans.into_iter().collect();
+            interface_change.trunk_set = Some(Spanned::new(vlan_set, stmt.span));
             continue;
         }
 
         if trunk_none_re.captures(stmt_text).is_some() {
-            if interface_change.trunk_clear.is_none() {
-                interface_change.trunk_clear = Some(stmt.span);
-            }
-            has_supported_stmt = true;
+            interface_change.trunk_clear = Some(stmt.span);
             continue;
         }
 
@@ -174,16 +175,7 @@ fn parse_interface_block(
                 stmt: stmt_text.to_string(),
                 span: stmt.span,
             });
-            has_supported_stmt = true;
         }
-    }
-
-    if !has_supported_stmt {
-        let mut diag = Diagnostic::new(ErrorKind::InterfaceRequiresStatements {
-            interface: ifname.to_string(),
-        });
-        diag.span = Some(block.span);
-        return Err(diag);
     }
 
     spec.interface_changes

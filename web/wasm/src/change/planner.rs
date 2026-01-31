@@ -11,6 +11,7 @@ use crate::change::validator::{
     validate_interface_description, validate_not_bundled_interface, validate_vlan_addition,
     validate_vlan_removals,
 };
+use std::cmp::Ordering;
 
 /// Builds a concrete change plan from desired input and the existing base context.
 pub struct ChangePlanner<'a> {
@@ -68,7 +69,10 @@ impl<'a> ChangePlanner<'a> {
 
             for vlan in desired.difference(&existing) {
                 // Validate that the VLAN is defined in vlan database or exists in base config
-                if let Some(&span) = change.trunk_add.get(vlan) {
+                if let Some(span) = change
+                    .addition_span_for(vlan)
+                    .or_else(|| self.change_spec.interface_span(baseif))
+                {
                     validate_vlan_addition(*vlan, self.change_spec, self.base_ctx, span)?;
                 }
 
@@ -129,34 +133,82 @@ fn desired_vlans(
     change: &InterfaceChange,
     existing: &std::collections::BTreeSet<VlanId>,
 ) -> std::collections::BTreeSet<VlanId> {
-    fn is_after(span: Span, pivot: Span) -> bool {
-        span.line > pivot.line || (span.line == pivot.line && span.col_start >= pivot.col_start)
+    #[derive(Clone)]
+    enum TrunkOp {
+        Clear(Span),
+        Set(Span, std::collections::BTreeSet<VlanId>),
+        Add(Span, VlanId),
+        Remove(Span, VlanId),
     }
 
+    impl TrunkOp {
+        fn span(&self) -> Span {
+            match self {
+                TrunkOp::Clear(span) => *span,
+                TrunkOp::Set(span, _) => *span,
+                TrunkOp::Add(span, _) => *span,
+                TrunkOp::Remove(span, _) => *span,
+            }
+        }
+    }
+
+    let mut ops: Vec<TrunkOp> = Vec::new();
+
     if let Some(clear_span) = change.trunk_clear {
-        let mut result = std::collections::BTreeSet::new();
+        ops.push(TrunkOp::Clear(clear_span));
+    }
 
-        for (vlan, span) in &change.trunk_add {
-            if is_after(*span, clear_span) {
-                result.insert(*vlan);
-            }
+    if let Some(set) = &change.trunk_set {
+        ops.push(TrunkOp::Set(set.span, set.value.clone()));
+    }
+
+    for (vlan, span) in &change.trunk_add {
+        ops.push(TrunkOp::Add(*span, *vlan));
+    }
+
+    for (vlan, span) in &change.trunk_remove {
+        ops.push(TrunkOp::Remove(*span, *vlan));
+    }
+
+    ops.sort_by(|a, b| {
+        let sa = a.span();
+        let sb = b.span();
+
+        match sa.line.cmp(&sb.line) {
+            Ordering::Equal => match sa.col_start.cmp(&sb.col_start) {
+                Ordering::Equal => match sa.col_end.cmp(&sb.col_end) {
+                    Ordering::Equal => op_order(a).cmp(&op_order(b)),
+                    other => other,
+                },
+                other => other,
+            },
+            other => other,
         }
+    });
 
-        for (vlan, span) in &change.trunk_remove {
-            if is_after(*span, clear_span) {
-                result.remove(vlan);
-            }
+    fn op_order(op: &TrunkOp) -> u8 {
+        match op {
+            TrunkOp::Clear(_) => 0,
+            TrunkOp::Set(_, _) => 1,
+            TrunkOp::Remove(_, _) => 2,
+            TrunkOp::Add(_, _) => 3,
         }
-
-        return result;
     }
 
     let mut result = existing.clone();
-    for vlan in change.trunk_add.keys() {
-        result.insert(*vlan);
+
+    for op in ops {
+        match op {
+            TrunkOp::Clear(_) => result.clear(),
+            TrunkOp::Set(_, vlans) => result = vlans,
+            TrunkOp::Add(_, vlan) => {
+                result.insert(vlan);
+            }
+            TrunkOp::Remove(_, vlan) => {
+                result.remove(&vlan);
+            }
+        }
     }
-    for vlan in change.trunk_remove.keys() {
-        result.remove(vlan);
-    }
+
     result
 }

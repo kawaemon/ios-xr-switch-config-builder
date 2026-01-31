@@ -76,12 +76,14 @@ pub fn validate_not_bundled_interface(
     if let Some(bundle_id) = base_ctx.bundle_id(baseif) {
         // If interface is bundled, it should not have VLAN add/remove operations
         if change.trunk_clear.is_some()
+            || change.trunk_set.is_some()
             || !change.trunk_add.is_empty()
             || !change.trunk_remove.is_empty()
         {
             // Get the span from the first VLAN operation
             let span = change
                 .trunk_clear
+                .or_else(|| change.trunk_set.as_ref().map(|s| s.span))
                 .or_else(|| change.trunk_add.values().copied().next())
                 .or_else(|| change.trunk_remove.values().copied().next())
                 .or_else(|| change_spec.interface_span(baseif))

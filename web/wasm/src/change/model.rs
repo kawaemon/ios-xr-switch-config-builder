@@ -83,8 +83,27 @@ pub struct InterfaceChange {
     pub trunk_remove: BTreeMap<VlanId, Span>, // vlan -> span
     /// Whether the trunk should be cleared of all VLANs (`switchport trunk allowed vlan none`).
     pub trunk_clear: Option<Span>,
+    /// Replace the allowed VLAN list entirely (`switchport trunk allowed vlan <list>`).
+    pub trunk_set: Option<Spanned<BTreeSet<VlanId>>>,
     /// Additional statements to apply under the interface.
     pub other_statements: Vec<SpannedNodeStmt>,
+}
+
+impl InterfaceChange {
+    /// Return the span associated with adding the given VLAN, whether via add or set.
+    pub fn addition_span_for(&self, vlan: &VlanId) -> Option<Span> {
+        if let Some(span) = self.trunk_add.get(vlan) {
+            return Some(*span);
+        }
+
+        if let Some(set) = &self.trunk_set {
+            if set.value.contains(vlan) {
+                return Some(set.span);
+            }
+        }
+
+        None
+    }
 }
 
 #[derive(Clone, Debug, Default)]
