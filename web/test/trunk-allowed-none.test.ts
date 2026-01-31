@@ -183,9 +183,7 @@ interface HundredGigE0/0/0/10
   switchport trunk allowed vlan none
 `.trim();
 
-  expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-    /bundle 100/,
-  );
+  expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(/bundle 100/);
 });
 
 it("clear overrides earlier add on the same interface", () => {
@@ -212,5 +210,7 @@ interface FortyGigE0/0/0/46
   const result = wasm.generate_change_config(baseConfig, changeInput);
 
   expect(result.changeOutput).toContain("no interface FortyGigE0/0/0/46.300 l2transport");
-  expect(result.changeOutput).not.toContain("interface FortyGigE0/0/0/46.300 l2transport\n  description");
+  expect(result.changeOutput).not.toContain(
+    "interface FortyGigE0/0/0/46.300 l2transport\n  description",
+  );
 });

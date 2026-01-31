@@ -34,54 +34,59 @@ impl ErrorKind {
         match self {
             ErrorKind::VlanNotPresent { vlan, interface } => {
                 format!(
-                    "cannot remove VLAN {} from interface {}: VLAN not present in base config",
-                    vlan, interface
+                    "ベース設定に存在しないため、インターフェイス{}からVLAN {}を削除できません",
+                    interface, vlan
                 )
             }
             ErrorKind::VlanNotDefinedInDatabase { vlan } => {
                 format!(
-                    "VLAN {} is not defined in vlan database or base config",
+                    "VLAN {} がvlan databaseまたはベース設定で定義されていません",
                     vlan
                 )
             }
             ErrorKind::VlanNameRequired { vlan } => {
                 if let Some(v) = vlan {
-                    format!("VLAN {} name is required", v)
+                    format!("VLAN {} の名前は必須です", v)
                 } else {
-                    "vlan name is required".to_string()
+                    "VLAN名は必須です".to_string()
                 }
             }
             ErrorKind::InvalidVlanId { text } => {
-                format!("invalid vlan id: {}", text)
+                format!("無効なVLAN IDです: {}", text)
             }
             ErrorKind::InvalidVlanNumber { text } => {
-                format!("invalid vlan number: {}", text)
+                format!("無効なVLAN番号です: {}", text)
             }
             ErrorKind::InvalidVlanRange { text } => {
-                format!("invalid VLAN range (start must be <= end): {}", text)
+                format!(
+                    "無効なVLAN範囲です（開始値は終了値以下である必要があります）: {}",
+                    text
+                )
             }
-            ErrorKind::VlanListEmpty => "vlan list is empty".to_string(),
+            ErrorKind::VlanListEmpty => "VLANリストが空です".to_string(),
             ErrorKind::MissingDescription { interface } => {
-                format!("interface requires description: {}", interface)
+                format!("インターフェイス{}にはdescriptionが必要です", interface)
             }
             ErrorKind::InvalidBviNumber { text } => {
-                format!("invalid BVI number: {}", text)
+                format!("無効なBVI番号です: {}", text)
             }
             ErrorKind::BundledInterfaceCannotConfigureVlans {
                 interface,
                 bundle_id,
             } => {
                 format!(
-                    "interface {} is part of bundle {} and cannot configure VLANs directly. Configure VLANs on Bundle-Ether{} instead",
+                    "インターフェイス{}はBundle {}のメンバーのため直接VLANを設定できません。代わりにBundle-Ether{}で設定してください",
                     interface, bundle_id, bundle_id
                 )
             }
             ErrorKind::UnsupportedSwitchportMode { mode } => {
-                format!("switchport mode {} is not supported", mode)
+                format!("switchport mode {} はサポートされていません", mode)
             }
-            ErrorKind::AccessModeNotSupported => "switchport access is not supported".to_string(),
+            ErrorKind::AccessModeNotSupported => {
+                "switchport access はサポートされていません".to_string()
+            }
             ErrorKind::InvalidTrunkAction { action } => {
-                format!("invalid trunk action: {}", action)
+                format!("無効なtrunkアクションです: {}", action)
             }
             ErrorKind::Generic { message } => message.clone(),
         }
@@ -111,12 +116,12 @@ impl Diagnostic {
         }
     }
 
-    /// Format the diagnostic as a string with optional line number
-    /// This maintains compatibility with existing error message format: "message (line N)"
+    /// Format the diagnostic as a string with optional line number.
+    /// When span is present, appends "（N行目）" to the message.
     pub fn format(&self) -> String {
         let message = self.kind.message();
         match self.span {
-            Some(span) => format!("{} (line {})", message, span.line.get()),
+            Some(span) => format!("{}（{}行目）", message, span.line.get()),
             None => message,
         }
     }

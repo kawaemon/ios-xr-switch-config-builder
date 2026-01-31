@@ -6,11 +6,7 @@ type LintResultModalProps = {
   onClose: () => void;
 };
 
-export function LintResultModal({
-  opened,
-  lintOutput,
-  onClose,
-}: LintResultModalProps) {
+export function LintResultModal({ opened, lintOutput, onClose }: LintResultModalProps) {
   return (
     <Modal opened={opened} onClose={onClose} title="Lint結果" size="lg">
       <Stack gap="sm">

@@ -84,7 +84,9 @@ pub fn generate_commands(plan: &ChangePlan, change_spec: &ChangeSpec) -> String 
 
     trim_trailing_empty_lines(&mut lines);
 
-    lines.join("\n")
+    let mut res = lines.join("\n");
+    res.push('\n'); // 最後の exit を確定させるため
+    res
 }
 
 fn trim_trailing_empty_lines(lines: &mut Vec<String>) {

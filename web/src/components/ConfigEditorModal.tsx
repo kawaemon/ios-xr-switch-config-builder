@@ -1,11 +1,4 @@
-import {
-  Button,
-  Group,
-  Modal,
-  Stack,
-  Text,
-  Textarea,
-} from "@mantine/core";
+import { Button, Group, Modal, Stack, Text, Textarea } from "@mantine/core";
 
 type ConfigEditorModalProps = {
   opened: boolean;
@@ -26,7 +19,8 @@ export function ConfigEditorModal({
     <Modal opened={opened} onClose={onCancel} title="Config入力" size="xl">
       <Stack gap="sm">
         <Text size="sm" c="dimmed">
-          ここで編集した内容が解析対象になります。
+          show running-config の結果をコピペしてください。ここで入力した内容がに基づいて config
+          が生成されます。すべての処理はローカルで行われ、インターネット接続を必要としません。
         </Text>
         <Textarea
           value={draftConfig}

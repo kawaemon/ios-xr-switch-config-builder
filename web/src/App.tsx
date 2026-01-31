@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 
-import defaultConfig from "../.kprivate/config.txt?raw";
 import { Box, Flex } from "@mantine/core";
 import * as wasmModule from "./wasm/pkg/ncs_wasm";
 import { LintStatusHeader } from "./components/LintStatusHeader";
@@ -10,33 +9,15 @@ import { SimplifiedConfigCard } from "./components/SimplifiedConfigCard";
 import { ChangeInputCard } from "./components/ChangeInputCard";
 import { GeneratedChangeCard } from "./components/GeneratedChangeCard";
 import { ChangeCommandExamplesModal } from "./components/ChangeCommandExamplesModal";
+import { demoBaseConfig, demoChangeInput } from "./demoData";
 
 const wasm = wasmModule;
 
-const demoChangeInput = [
-  "interface FortyGigE0/0/0/46",
-  "  description To:demo-port",
-  "  switchport mode trunk",
-  "  switchport trunk allowed vlan add 350",
-  "  switchport trunk allowed vlan remove 300",
-  "",
-  "interface HundredGigE0/0/0/23",
-  "  description To:demo-uplink",
-  "  switchport mode trunk",
-  "  switchport trunk allowed vlan add 350 500",
-  "",
-  "interface BVI500",
-  "",
-  "vlan database",
-  "  vlan 350 name demo-servers",
-  "  vlan 500 name demo-mgmt",
-].join("\n");
-
 function App() {
-  const [src, setSrc] = useState(defaultConfig);
+  const [src, setSrc] = useState(demoBaseConfig);
   const [changeInput, setChangeInput] = useState(demoChangeInput);
   const [isConfigModalOpen, setConfigModalOpen] = useState(false);
-  const [draftConfig, setDraftConfig] = useState(defaultConfig);
+  const [draftConfig, setDraftConfig] = useState(demoBaseConfig);
   const [isLintModalOpen, setLintModalOpen] = useState(false);
   const [isExampleModalOpen, setExampleModalOpen] = useState(false);
   const isConfigEmpty = src.trim().length === 0;
@@ -66,10 +47,9 @@ function App() {
   const simplifiedPlaceholderMessage = isConfigEmpty
     ? "Configを入力すると、簡略化されたconfigが表示されます。"
     : hasLintIssues
-    ? "Lint指摘をすべて解消すると、簡略化されたconfigが表示されます。"
-    : "変換結果がここに表示されます。";
-  const simplifiedConfig =
-    !isConfigEmpty && !hasLintIssues ? currentConfig.simplifiedConfig : "";
+      ? "Lint指摘をすべて解消すると、簡略化されたconfigが表示されます。"
+      : "変換結果がここに表示されます。";
+  const simplifiedConfig = !isConfigEmpty && !hasLintIssues ? currentConfig.simplifiedConfig : "";
 
   return (
     <>
@@ -77,7 +57,6 @@ function App() {
         <LintStatusHeader
           showLintDetailButton={showLintDetailButton}
           onOpenLintModal={() => setLintModalOpen(true)}
-          onOpenConfigModal={openConfigModal}
         />
 
         <Flex flex={1} gap="xl" mih={0}>
@@ -101,6 +80,7 @@ function App() {
               <SimplifiedConfigCard
                 value={simplifiedConfig}
                 placeholderMessage={simplifiedPlaceholderMessage}
+                onOpenConfigModal={openConfigModal}
               />
             </Box>
           </Flex>

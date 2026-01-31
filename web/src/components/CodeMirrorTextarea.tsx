@@ -57,9 +57,9 @@ export function CodeMirrorTextarea({
             backgroundColor: "var(--mantine-color-default-hover)",
           },
         },
-        { dark: colorScheme === "dark" }
+        { dark: colorScheme === "dark" },
       ),
-    [colorScheme]
+    [colorScheme],
   );
 
   const extensions = useMemo(() => {
@@ -72,7 +72,7 @@ export function CodeMirrorTextarea({
         autocompletion({
           override: [completionSource],
           activateOnTyping: true,
-        })
+        }),
       );
     }
     return base;

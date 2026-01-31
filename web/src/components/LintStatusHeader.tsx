@@ -13,14 +13,9 @@ import { IconMoon, IconSun } from "@tabler/icons-react";
 type LintStatusHeaderProps = {
   showLintDetailButton: boolean;
   onOpenLintModal: () => void;
-  onOpenConfigModal: () => void;
 };
 
-export function LintStatusHeader({
-  showLintDetailButton,
-  onOpenLintModal,
-  onOpenConfigModal,
-}: LintStatusHeaderProps) {
+export function LintStatusHeader({ showLintDetailButton, onOpenLintModal }: LintStatusHeaderProps) {
   const computedColorScheme = useComputedColorScheme("light");
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const isDark = computedColorScheme === "dark";
@@ -39,7 +34,7 @@ export function LintStatusHeader({
       <Stack gap={4} maw={600}>
         <Title order={1}>IOS XR Switch Config Builder</Title>
         <Text c="dimmed">
-          NCS configを一般スイッチ向けの見やすい形式で確認できます。
+          IOS XR での L2 設定をを一般スイッチ向けの見やすい形式で確認できます。
         </Text>
       </Stack>
       <Group gap="sm" align="center">
@@ -52,15 +47,10 @@ export function LintStatusHeader({
           {isDark ? <IconMoon size={20} /> : <IconSun size={20} />}
         </ActionIcon>
         {showLintDetailButton ? (
-          <Button
-            variant="subtle"
-            size="compact-sm"
-            onClick={onOpenLintModal}
-          >
+          <Button variant="subtle" size="compact-sm" onClick={onOpenLintModal}>
             Lint詳細
           </Button>
         ) : null}
-        <Button onClick={onOpenConfigModal}>Configを編集</Button>
       </Group>
     </Group>
   );

@@ -103,11 +103,7 @@ const changeCommandCompletionSource: CompletionSource = (context) => {
   };
 };
 
-export function ChangeInputCard({
-  value,
-  onChange,
-  onOpenExamples,
-}: ChangeInputCardProps) {
+export function ChangeInputCard({ value, onChange, onOpenExamples }: ChangeInputCardProps) {
   return (
     <Paper withBorder radius="md" p="lg" h="100%">
       <Flex direction="column" h="100%" gap="sm">

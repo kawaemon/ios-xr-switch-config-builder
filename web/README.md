@@ -1,8 +1,8 @@
-# ncs l2 config builder
+# IOX-XR Switch Config Builder
 
-ncs5502 (ios xr) は management switch として機能できるものの、config の書き方が非常にややこしい。このツールはそれを支援する機能を提供する。
+IOS XR は L2 の設定の書き方が非常にややこしい。このツールはそれを支援する機能を提供する。
 
-ncs5502 では config を以下のように書く。
+IOS XR では config を以下のように書く。
 
 ```
 interface FortyGigE0/0/0/46
@@ -70,7 +70,6 @@ interface FortyGigE0/0/0/48
 ```
 
 のようにコマンドを書いていく。このツールは、後者のような構文を入力することで、前者の設定変更を行う入力をコピペ可能な形式で自動生成するツールである。
-先ほどの例では、以下のようなテキストが生成される。
 
 ```
 no interface FortyGigE0/0/0/46.300 l2transport

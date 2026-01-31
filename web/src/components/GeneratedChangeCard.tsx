@@ -7,14 +7,11 @@ type GeneratedChangeCardProps = {
   errorMessage: string;
 };
 
-export function GeneratedChangeCard({
-  value,
-  errorMessage,
-}: GeneratedChangeCardProps) {
+export function GeneratedChangeCard({ value, errorMessage }: GeneratedChangeCardProps) {
   return (
     <Paper withBorder radius="md" p="lg" h="100%">
       <Flex direction="column" h="100%" gap="sm">
-        <Text fw={600}>ncs config</Text>
+        <Text fw={600}>コピペ可能な設定</Text>
         {errorMessage && (
           <Alert
             variant="light"
@@ -27,16 +24,8 @@ export function GeneratedChangeCard({
           </Alert>
         )}
         <Box pos="relative" flex={1} mih={0}>
-          <CodeMirrorTextarea
-            value={value}
-            readOnly
-            placeholder="生成結果がここに表示されます"
-          />
-          <Tooltip
-            label={
-              value ? "クリップボードにコピー" : "コピーする内容がありません"
-            }
-          >
+          <CodeMirrorTextarea value={value} readOnly placeholder="生成結果がここに表示されます" />
+          <Tooltip label={value ? "クリップボードにコピー" : "コピーする内容がありません"}>
             <ActionIcon
               variant="light"
               color="gray"
