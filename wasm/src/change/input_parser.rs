@@ -97,9 +97,8 @@ fn parse_interface_block(
     let mode_re = regex!(r"^switchport mode\s+(trunk)$");
     let mode_any_re = regex!(r"^switchport mode\s+(.+)$");
     let trunk_none_re = regex!(r"^switchport trunk allowed vlan none\s*$");
-    let trunk_set_re =
-        regex!(r"^switchport trunk allowed vlan\s+(?!add\b)(?!remove\b)(?!none\b)(.+)$");
     let trunk_re = regex!(r"^switchport trunk allowed vlan (add|remove)\s+(.+)$");
+    let trunk_set_re = regex!(r"^switchport trunk allowed vlan\s+(.+)$");
 
     for stmt in block.stmts().filter_map(|s| s.as_stmt()) {
         let stmt_text = stmt.stmt.trim_end();
@@ -140,6 +139,11 @@ fn parse_interface_block(
             return Err(diag);
         }
 
+        if trunk_none_re.captures(stmt_text).is_some() {
+            interface_change.trunk_clear = Some(stmt.span);
+            continue;
+        }
+
         if let Some(caps) = trunk_re.captures(stmt_text) {
             let action = caps
                 .get(1)
@@ -159,14 +163,15 @@ fn parse_interface_block(
                 .get(1)
                 .map(|m| m.as_str().to_string())
                 .unwrap_or_default();
+
+            let first_token = list.split_whitespace().next().unwrap_or("");
+            if matches!(first_token, "add" | "remove" | "none") {
+                continue;
+            }
+
             let vlans = parse_vlan_list(&list)?;
             let vlan_set: BTreeSet<VlanId> = vlans.into_iter().collect();
             interface_change.trunk_set = Some(Spanned::new(vlan_set, stmt.span));
-            continue;
-        }
-
-        if trunk_none_re.captures(stmt_text).is_some() {
-            interface_change.trunk_clear = Some(stmt.span);
             continue;
         }
 

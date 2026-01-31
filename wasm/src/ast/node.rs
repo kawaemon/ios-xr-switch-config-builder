@@ -35,6 +35,14 @@ pub enum SpannedNode {
 }
 
 impl SpannedNode {
+    /// Treat the node as a block when applicable.
+    pub fn as_block(&self) -> Option<&SpannedNodeBlock> {
+        match self {
+            SpannedNode::Block(b) => Some(b),
+            _ => None,
+        }
+    }
+
     /// Treat the node as a statement when applicable.
     pub fn as_stmt(&self) -> Option<&SpannedNodeStmt> {
         match self {
