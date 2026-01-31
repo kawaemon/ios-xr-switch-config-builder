@@ -37,12 +37,6 @@ jobs:
           corepack enable
           corepack prepare pnpm --activate
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.0
-          run_install: true
-
       - name: Install cargo-binstall
         run: curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 
@@ -51,8 +45,8 @@ jobs:
 
       - name: Build site
         run: |
-          pnpm run wasm:build
-          pnpm run build
+          corepack pnpm run wasm:build
+          corepack pnpm run build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
