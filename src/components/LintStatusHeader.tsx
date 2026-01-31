@@ -8,7 +8,7 @@ import {
   useComputedColorScheme,
   useMantineColorScheme,
 } from "@mantine/core";
-import { IconMoon, IconSun } from "@tabler/icons-react";
+import { IconBrandGithub, IconMoon, IconSun } from "@tabler/icons-react";
 
 type LintStatusHeaderProps = {
   showLintDetailButton: boolean;
@@ -38,6 +38,17 @@ export function LintStatusHeader({ showLintDetailButton, onOpenLintModal }: Lint
         </Text>
       </Stack>
       <Group gap="sm" align="center">
+        <ActionIcon
+          component="a"
+          href="https://github.com/kawaemon/ios-xr-switch-config-builder"
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="subtle"
+          size="lg"
+          aria-label="GitHub repository"
+        >
+          <IconBrandGithub size={18} />
+        </ActionIcon>
         <ActionIcon
           variant="subtle"
           size="lg"
