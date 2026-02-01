@@ -80,15 +80,6 @@ export const demoBaseConfig = [
 ].join("\n");
 
 export const demoChangeInput = [
-  "vlan database",
-  "  vlan 200 name users",
-  "  vlan 210 name eng",
-  "  vlan 300 name servers",
-  "  vlan 330 name app-staging",
-  "  vlan 331 name app-canary",
-  "  vlan 500 name mgmt",
-  "  vlan 600 name guest-wifi",
-  "",
   "interface FortyGigE0/0/0/10",
   "  description To:leaf-a",
   "  mru 9216",
@@ -118,4 +109,14 @@ export const demoChangeInput = [
   "",
   "interface BVI300",
   "  description servers-updated",
+  "",
+  "vlan database",
+  "  vlan 200 name users",
+  "  vlan 210 name eng",
+  "  vlan 300 name servers",
+  "  vlan 330 name app-staging",
+  "  vlan 331 name app-canary",
+  "  vlan 500 name mgmt",
+  "  vlan 600 name guest-wifi",
+  "",
 ].join("\n");
