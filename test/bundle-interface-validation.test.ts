@@ -22,7 +22,7 @@ interface HundredGigE0/0/0/10
   } catch (e: any) {
     const errorStr = String(e);
     expect(errorStr).toContain("HundredGigE0/0/0/10");
-    expect(errorStr).toContain("bundle 100");
+    expect(errorStr).toContain("Bundle 100");
     expect(errorStr).toContain("Bundle-Ether100");
   }
 });
@@ -99,7 +99,7 @@ interface FortyGigE0/0/0/2
   } catch (e: any) {
     const errorStr = String(e);
     expect(errorStr).toContain("FortyGigE0/0/0/1");
-    expect(errorStr).toContain("bundle 5");
+    expect(errorStr).toContain("Bundle 5");
     expect(errorStr).toContain("Bundle-Ether5");
   }
 
@@ -110,7 +110,7 @@ interface FortyGigE0/0/0/2
   } catch (e: any) {
     const errorStr = String(e);
     expect(errorStr).toContain("FortyGigE0/0/0/2");
-    expect(errorStr).toContain("bundle 200");
+    expect(errorStr).toContain("Bundle 200");
     expect(errorStr).toContain("Bundle-Ether200");
   }
 });

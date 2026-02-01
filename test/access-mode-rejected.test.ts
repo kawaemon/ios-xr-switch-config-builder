@@ -18,6 +18,6 @@ interface FortyGigE0/0/0/46
 `.trim();
 
   expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-    /switchport mode access is not supported/,
+    /switchport mode access はサポートされていません/,
   );
 });

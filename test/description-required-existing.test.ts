@@ -16,6 +16,6 @@ interface FortyGigE0/0/0/46
 `.trim();
 
   expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-    /interface requires description: FortyGigE0\/0\/0\/46 \(line 4\)/,
+    /インターフェイスFortyGigE0\/0\/0\/46にはdescriptionが必要です（4行目）/,
   );
 });

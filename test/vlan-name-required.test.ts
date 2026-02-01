@@ -16,6 +16,6 @@ interface FortyGigE0/0/0/46
 `.trim();
 
   expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-    "vlan name is required",
+    /VLAN名は必須です|vlan name is required/,
   );
 });

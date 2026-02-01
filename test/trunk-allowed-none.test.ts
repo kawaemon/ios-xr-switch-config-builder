@@ -183,7 +183,7 @@ interface HundredGigE0/0/0/10
   switchport trunk allowed vlan none
 `.trim();
 
-  expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(/bundle 100/);
+  expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(/Bundle 100/);
 });
 
 it("clear overrides earlier add on the same interface", () => {

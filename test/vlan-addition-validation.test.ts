@@ -16,7 +16,7 @@ interface FortyGigE0/0/0/46
 `.trim();
 
   expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-    /VLAN 400.*not defined in vlan database/i,
+    /VLAN 400.*vlan database.*定義されていません|VLAN 400.*not defined in vlan database/i,
   );
 });
 
@@ -92,6 +92,6 @@ interface FortyGigE0/0/0/47
 `.trim();
 
   expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-    /VLAN 500.*not defined in vlan database/i,
+    /VLAN 500.*vlan database.*定義されていません|VLAN 500.*not defined in vlan database/i,
   );
 });

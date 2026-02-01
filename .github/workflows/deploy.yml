@@ -42,6 +42,7 @@ jobs:
         run: |
           corepack pnpm install
           corepack pnpm run wasm:build
+          corepack pnpm test
           corepack pnpm run build
 
       - name: Upload Pages artifact

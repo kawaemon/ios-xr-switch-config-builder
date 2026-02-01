@@ -27,6 +27,6 @@ interface FortyGigE0/0/0/46
 `.trim();
 
   expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-    /cannot remove VLAN 100 from interface FortyGigE0\/0\/0\/46: VLAN not present in base config \(line 6\)/,
+    /ベース設定に存在しないため.*インターフェイスFortyGigE0\/0\/0\/46からVLAN 100を削除できません.*6行目/,
   );
 });

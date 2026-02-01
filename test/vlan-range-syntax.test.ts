@@ -152,6 +152,6 @@ interface FortyGigE0/0/0/46
 `.trim();
 
   expect(() => wasm.generate_change_config(baseConfig, changeInput)).toThrow(
-    /invalid VLAN range.*308-302/i,
+    /無効なVLAN範囲.*308-302|invalid VLAN range.*308-302/i,
   );
 });
