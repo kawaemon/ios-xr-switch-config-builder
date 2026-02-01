@@ -8,7 +8,7 @@ IOS XR では config を以下のように書く。
 interface FortyGigE0/0/0/46
   description To:eth1.server1
   mru 9216
-interface FortyGigE0/0/0/46 l2transport
+interface FortyGigE0/0/0/46.300 l2transport
   description servers,To:eth1.server1
   encapsulation dot1q 300
   rewrite ingress tag pop 1 symmetric
