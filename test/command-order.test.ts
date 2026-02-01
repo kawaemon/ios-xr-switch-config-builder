@@ -69,6 +69,5 @@ l2vpn
     exit
   exit
 exit
-
 `);
 });

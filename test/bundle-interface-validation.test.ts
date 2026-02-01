@@ -19,7 +19,7 @@ interface HundredGigE0/0/0/10
   try {
     wasm.generate_change_config(baseConfig, changeInput);
     expect.fail("Expected an error to be thrown");
-  } catch (e: any) {
+  } catch (e: unknown) {
     const errorStr = String(e);
     expect(errorStr).toContain("HundredGigE0/0/0/10");
     expect(errorStr).toContain("Bundle 100");
@@ -96,7 +96,7 @@ interface FortyGigE0/0/0/2
   try {
     wasm.generate_change_config(baseConfig, changeInput1);
     expect.fail("Expected an error for bundle 5");
-  } catch (e: any) {
+  } catch (e: unknown) {
     const errorStr = String(e);
     expect(errorStr).toContain("FortyGigE0/0/0/1");
     expect(errorStr).toContain("Bundle 5");
@@ -107,7 +107,7 @@ interface FortyGigE0/0/0/2
   try {
     wasm.generate_change_config(baseConfig, changeInput2);
     expect.fail("Expected an error for bundle 200");
-  } catch (e: any) {
+  } catch (e: unknown) {
     const errorStr = String(e);
     expect(errorStr).toContain("FortyGigE0/0/0/2");
     expect(errorStr).toContain("Bundle 200");

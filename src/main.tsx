@@ -7,7 +7,7 @@ import { initWasm } from "./wasm/index.ts";
 
 const theme = createTheme({});
 
-function LoadingScreen() {
+export function LoadingScreen() {
   return (
     <MantineProvider theme={theme} defaultColorScheme="auto">
       <Stack align="center" justify="center" style={{ height: "100vh" }} gap="md">

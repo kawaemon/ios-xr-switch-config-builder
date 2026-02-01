@@ -5,7 +5,8 @@
 
 use crate::ast::Span;
 use crate::change::model::{
-    BaseContext, ChangePlan, ChangeSpec, InterfaceChange, InterfaceCreation, VlanChange, VlanId,
+    BaseContext, ChangePlan, ChangeSpec, InterfaceChange, InterfaceCreation, InterfaceRemoval,
+    VlanChange, VlanId,
 };
 use crate::change::validator::{
     validate_interface_description, validate_not_bundled_interface, validate_vlan_addition,
@@ -58,8 +59,10 @@ impl<'a> ChangePlanner<'a> {
 
             for vlan in existing.difference(&desired) {
                 let iface = format!("{}.{}", baseif, vlan);
-                plan.removal_cmds
-                    .push(format!("no interface {} l2transport", iface));
+                plan.removal_cmds.push(InterfaceRemoval {
+                    baseif: baseif.clone(),
+                    command: format!("no interface {} l2transport", iface),
+                });
 
                 plan.vlan_changes
                     .entry(*vlan)

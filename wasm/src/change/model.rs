@@ -255,6 +255,15 @@ pub struct InterfaceCreation {
     pub description: String,
 }
 
+/// Planned removal of a subinterface.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InterfaceRemoval {
+    /// Base interface from which the subinterface is being removed.
+    pub baseif: BaseIf,
+    /// The full removal command (e.g. "no interface ...").
+    pub command: String,
+}
+
 /// Membership of a base interface in a VLAN.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InterfaceMembership {
@@ -308,7 +317,7 @@ impl VlanChange {
 #[derive(Clone, Debug, Default)]
 pub struct ChangePlan {
     /// Commands to remove outdated subinterfaces.
-    pub removal_cmds: Vec<String>,
+    pub removal_cmds: Vec<InterfaceRemoval>,
     /// New subinterfaces to create with associated descriptions.
     pub additions: Vec<InterfaceCreation>,
     /// Per-VLAN change details.

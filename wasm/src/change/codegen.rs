@@ -3,20 +3,63 @@
 //! This module generates the actual IOS XR CLI commands needed to apply
 //! the planned changes to the switch configuration.
 
-use crate::change::model::{ChangePlan, ChangeSpec};
+use crate::change::model::{BaseIf, ChangePlan, ChangeSpec};
+use std::collections::BTreeSet;
 
 pub fn generate_commands(plan: &ChangePlan, change_spec: &ChangeSpec) -> String {
     let mut lines: Vec<String> = Vec::new();
 
-    // Output physical interface configuration changes
-    for (baseif, change) in &change_spec.interface_changes {
-        if !change.other_statements.is_empty() {
-            lines.push(format!("interface {}", baseif));
-            for stmt in &change.other_statements {
-                lines.push(format!("  {}", stmt.stmt));
+    // Collect all affected physical interfaces to process them in order
+    let mut affected_interfaces: BTreeSet<&BaseIf> = BTreeSet::new();
+    for baseif in change_spec.interface_changes.keys() {
+        affected_interfaces.insert(baseif);
+    }
+    for removal in &plan.removal_cmds {
+        affected_interfaces.insert(&removal.baseif);
+    }
+    for addition in &plan.additions {
+        affected_interfaces.insert(&addition.baseif);
+    }
+
+    // Output changes grouped by physical interface
+    for baseif in affected_interfaces {
+        // 1. Base interface configuration
+        if let Some(change) = change_spec.interface_changes.get(baseif) {
+            if !change.other_statements.is_empty() {
+                lines.push(format!("interface {}", baseif));
+                for stmt in &change.other_statements {
+                    lines.push(format!("  {}", stmt.stmt));
+                }
+                lines.push("exit".to_string());
+                lines.push(String::new());
             }
-            lines.push("exit".to_string());
+        }
+
+        // 2. Subinterface removals
+        let mut had_removals = false;
+        for removal in &plan.removal_cmds {
+            if &removal.baseif == baseif {
+                lines.push(removal.command.clone());
+                had_removals = true;
+            }
+        }
+        if had_removals {
             lines.push(String::new());
+        }
+
+        // 3. Subinterface additions
+        for addition in &plan.additions {
+            if &addition.baseif == baseif {
+                lines.push(format!(
+                    "interface {}.{} l2transport",
+                    addition.baseif, addition.vlan
+                ));
+                lines.push(format!("  description {}", addition.description));
+                lines.push(format!("  encapsulation dot1q {}", addition.vlan));
+                lines.push("  rewrite ingress tag pop 1 symmetric".to_string());
+                lines.push("exit".to_string());
+                lines.push(String::new());
+            }
         }
     }
 
@@ -30,23 +73,6 @@ pub fn generate_commands(plan: &ChangePlan, change_spec: &ChangeSpec) -> String 
             lines.push("exit".to_string());
             lines.push(String::new());
         }
-    }
-
-    if !plan.removal_cmds.is_empty() {
-        lines.extend(plan.removal_cmds.clone());
-        lines.push(String::new());
-    }
-
-    for addition in &plan.additions {
-        lines.push(format!(
-            "interface {}.{} l2transport",
-            addition.baseif, addition.vlan
-        ));
-        lines.push(format!("  description {}", addition.description));
-        lines.push(format!("  encapsulation dot1q {}", addition.vlan));
-        lines.push("  rewrite ingress tag pop 1 symmetric".to_string());
-        lines.push("exit".to_string());
-        lines.push(String::new());
     }
 
     if !plan.vlan_changes.is_empty() {
