@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "wasm:build": "wasm-pack build wasm --target bundler --out-dir ../src/wasm/pkg",
-    "test": "vitest",
+    "test": "vitest run",
     "fmt": "oxfmt"
   },
   "dependencies": {

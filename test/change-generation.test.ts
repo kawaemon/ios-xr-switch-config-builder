@@ -50,6 +50,6 @@ interface FortyGigE0/0/0/46
       "    exit",
       "  exit",
       "exit",
-    ].join("\n"),
+    ].join("\n") + "\n",
   );
 });

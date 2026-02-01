@@ -39,7 +39,8 @@ interface HundredGigE0/0/0/1
   const result = wasm.generate_change_config(baseConfig, changeInput);
 
   expect(result.changeOutput).toEqual(
-    ["interface HundredGigE0/0/0/1", "  description To:server2", "  mru 9216", "exit"].join("\n"),
+    ["interface HundredGigE0/0/0/1", "  description To:server2", "  mru 9216", "exit"].join("\n") +
+      "\n",
   );
 });
 
