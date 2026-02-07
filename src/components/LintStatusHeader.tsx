@@ -34,7 +34,7 @@ export function LintStatusHeader({ showLintDetailButton, onOpenLintModal }: Lint
       <Stack gap={4} maw={600}>
         <Title order={1}>IOS XR Switch Config Builder</Title>
         <Text c="dimmed">
-          IOS XR での L2 設定をを一般スイッチ向けの見やすい形式で確認できます。
+          IOS XR での L2 設定を一般スイッチ向けの見やすい形式で確認できます。
         </Text>
       </Stack>
       <Group gap="sm" align="center">

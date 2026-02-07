@@ -96,10 +96,12 @@ const changeCommandCompletionSource: CompletionSource = (context) => {
     return true;
   });
 
+  const lineContentFrom = line.from + line.text.search(/\S|$/);
+
   return {
-    from: word ? word.from : context.pos,
+    from: lineContentFrom,
     options: filteredOptions,
-    validFor: /^\S*$/,
+    validFor: /^.*$/,
   };
 };
 

@@ -56,6 +56,13 @@ export function CodeMirrorTextarea({
           ".cm-activeLine, .cm-activeLineGutter": {
             backgroundColor: "var(--mantine-color-default-hover)",
           },
+          ".cm-tooltip-autocomplete": {
+            backgroundColor: "var(--mantine-color-body)",
+            border: "1px solid var(--mantine-color-default-border)",
+          },
+          ".cm-tooltip-autocomplete ul li[aria-selected]": {
+            backgroundColor: "var(--mantine-primary-color-light)",
+          },
         },
         { dark: colorScheme === "dark" },
       ),
